@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>FOUR SUCRE</title>
+<style>
+  :root{
+    --sepia-dark:#3e2f1c;
+    --sepia-mid:#8a6d45;
+    --sepia-light:#d8c49a;
+    --sepia-paper:#e8d9b5;
+    --accent:#b5541e;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{
+    width:100%;height:100%;
+    overflow:hidden;
+    background:#2a2015;
+    font-family:Georgia,'Times New Roman',serif;
+    touch-action:none;
+    overscroll-behavior:none;
+    position:fixed;
+  }
+  #wrap{
+    width:100%;height:100%;
+    display:flex;align-items:center;justify-content:center;
+  }
+  #stage{
+    position:relative;
+  }
+  canvas{
+    display:block;
+    background:var(--sepia-light);
+    image-rendering:auto;
+    border-radius:6px;
+    box-shadow:0 0 40px rgba(0,0,0,.6);
+  }
+  /* ---------- overlays ---------- */
+  .overlay{
+    position:absolute;inset:0;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    background:rgba(42,32,21,.88);
+    color:var(--sepia-paper);
+    text-align:center;
+    padding:16px;
+    border-radius:6px;
+    z-index:20;
+  }
+  .hidden{display:none !important;}
+  h1{
+    font-size:min(13vw,56px);
+    letter-spacing:4px;
+    color:var(--sepia-paper);
+    text-shadow:3px 3px 0 var(--accent);
+    margin-bottom:8px;
+  }
+  .sub{font-size:16px;opacity:.9;margin:10px 0 18px;max-width:340px;line-height:1.4;}
+  .btn{
+    font-family:inherit;
+    font-size:22px;
+    padding:14px 40px;
+    background:var(--accent);
+    color:#fff;
+    border:3px solid #7a3610;
+    border-radius:10px;
+    cursor:pointer;
+    box-shadow:0 4px 0 #7a3610;
+    margin:6px;
+  }
+  .btn:active{transform:translateY(3px);box-shadow:0 1px 0 #7a3610;}
+  .btn.small{font-size:16px;padding:8px 18px;}
+  .btn:disabled{opacity:.45;cursor:default;}
+  #daveHero{margin:4px 0;}
+  /* ---------- shop ---------- */
+  #shop .card{
+    background:var(--sepia-paper);
+    color:var(--sepia-dark);
+    border:4px solid var(--sepia-mid);
+    border-radius:12px;
+    padding:14px;
+    width:min(92%,360px);
+  }
+  #shop h2{margin-bottom:6px;font-size:24px;}
+  .shopRow{
+    display:flex;align-items:center;justify-content:space-between;
+    gap:8px;
+    background:rgba(138,109,69,.15);
+    border-radius:8px;
+    padding:8px;
+    margin:8px 0;
+    text-align:left;
+  }
+  .shopRow .nm{font-weight:bold;font-size:15px;}
+  .shopRow .ds{font-size:12px;opacity:.85;}
+  .pips{letter-spacing:2px;font-size:13px;color:var(--accent);}
+  /* ---------- keypad ---------- */
+  #keypad .pad{
+    background:var(--sepia-paper);
+    color:var(--sepia-dark);
+    border:4px solid var(--sepia-mid);
+    border-radius:12px;
+    padding:14px;
+  }
+  #kpDisplay{
+    font-size:30px;letter-spacing:10px;
+    background:#fff;border:2px solid var(--sepia-mid);
+    border-radius:8px;min-width:170px;
+    padding:6px 10px;margin-bottom:10px;
+    min-height:48px;
+  }
+  #kpDisplay.bad{background:#f3b8a6;}
+  .kpGrid{display:grid;grid-template-columns:repeat(3,64px);gap:8px;justify-content:center;}
+  .kpGrid button{
+    font-family:inherit;font-size:24px;
+    padding:10px 0;border-radius:8px;
+    border:2px solid var(--sepia-mid);
+    background:#fff;cursor:pointer;
+  }
+  .kpGrid button:active{background:var(--sepia-light);}
+  /* ---------- touch controls ---------- */
+  #touchUI{position:absolute;inset:0;z-index:10;pointer-events:none;display:none;}
+  body.touch #touchUI{display:block;}
+  .tbtn{
+    position:absolute;
+    pointer-events:auto;
+    background:rgba(62,47,28,.45);
+    border:2px solid rgba(232,217,181,.6);
+    border-radius:12px;
+    color:var(--sepia-paper);
+    font-size:22px;
+    display:flex;align-items:center;justify-content:center;
+    user-select:none;-webkit-user-select:none;
+  }
+  .tbtn:active{background:rgba(181,84,30,.6);}
+  #bUp   {left:62px; bottom:118px;width:52px;height:52px;}
+  #bDown {left:62px; bottom:10px; width:52px;height:52px;}
+  #bLeft {left:6px;  bottom:64px; width:52px;height:52px;}
+  #bRight{left:118px;bottom:64px; width:52px;height:52px;}
+  #bAct{
+    right:12px;bottom:34px;
+    width:76px;height:76px;border-radius:50%;
+    font-size:15px;font-weight:bold;
+    background:rgba(181,84,30,.55);
+  }
+  /* mute */
+  #muteBtn{
+    position:absolute;top:6px;right:6px;z-index:15;
+    width:40px;height:40px;border-radius:8px;
+    border:2px solid rgba(232,217,181,.5);
+    background:rgba(62,47,28,.5);
+    color:var(--sepia-paper);font-size:20px;cursor:pointer;
+  }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="stage">
+    <canvas id="cv" width="480" height="800"></canvas>
+    <button id="muteBtn" aria-label="Son">&#128266;</button>
+
+    <div id="touchUI">
+      <div class="tbtn" id="bUp">&#9650;</div>
+      <div class="tbtn" id="bDown">&#9660;</div>
+      <div class="tbtn" id="bLeft">&#9664;</div>
+      <div class="tbtn" id="bRight">&#9654;</div>
+      <div class="tbtn" id="bAct">ACTION</div>
+    </div>
+
+    <div id="startScr" class="overlay">
+      <h1>FOUR SUCRE</h1>
+      <canvas id="daveHero" width="140" height="120"></canvas>
+      <div class="sub">Dave le livreur de sucre ! Monte vendre ton sucre au march&eacute;, &eacute;vite les trains et les soldats, et rapporte l'argent &agrave; la base.</div>
+      <button class="btn" id="playBtn">JOUER</button>
+      <div class="sub" style="font-size:13px;">Fl&egrave;ches / WASD : bouger &bull; Espace : action</div>
+    </div>
+
+    <div id="shop" class="overlay hidden">
+      <div class="card">
+        <h2>&#127978; Boutique</h2>
+        <div style="font-size:15px;margin-bottom:4px;">Argent &agrave; la banque : <b id="shopMoney">0</b> $</div>
+        <div class="shopRow">
+          <div><div class="nm">Gros sac de sucre</div><div class="ds">+8 $ par voyage, marche un peu plus lentement</div><div class="pips" id="pipBag"></div></div>
+          <button class="btn small" id="buyBag">30 $</button>
+        </div>
+        <div class="shopRow">
+          <div><div class="nm">Vie en plus</div><div class="ds">Un c&oelig;ur de plus pour Dave</div><div class="pips" id="pipLife"></div></div>
+          <button class="btn small" id="buyLife">50 $</button>
+        </div>
+        <div class="shopRow">
+          <div><div class="nm">Boisson plus longue</div><div class="ds">+2 secondes de super pouvoir</div><div class="pips" id="pipDrink"></div></div>
+          <button class="btn small" id="buyDrink">25 $</button>
+        </div>
+        <button class="btn" id="closeShop" style="font-size:18px;">Fermer</button>
+      </div>
+    </div>
+
+    <div id="keypad" class="overlay hidden">
+      <div class="pad">
+        <h2 style="margin-bottom:8px;">&#128274; Code secret</h2>
+        <div id="kpDisplay">&nbsp;</div>
+        <div class="kpGrid">
+          <button>1</button><button>2</button><button>3</button>
+          <button>4</button><button>5</button><button>6</button>
+          <button>7</button><button>8</button><button>9</button>
+          <button id="kpClear">&#10006;</button><button>0</button><button id="kpOk">OK</button>
+        </div>
+        <button class="btn small" id="kpClose" style="margin-top:10px;">Fermer</button>
+      </div>
+    </div>
+
+    <div id="overScr" class="overlay hidden">
+      <h1 style="font-size:40px;">PARTIE FINIE</h1>
+      <div class="sub" style="font-size:20px;">
+        Argent &agrave; la banque : <b id="ovMoney">0</b> $<br>
+        Niveau atteint : <b id="ovLevel">1</b><br><br>
+        &#127942; Record d'argent : <b id="ovBest">0</b> $<br>
+        &#127942; Meilleur niveau : <b id="ovBestLvl">1</b>
+      </div>
+      <button class="btn" id="replayBtn">REJOUER</button>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ================= FOUR SUCRE — jeu de Léo, 9 ans ================= */
+const W = 480, H = 800;
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+
+/* ---------- lanes ---------- */
+const LANE_TOP = 95, LANE_H = 55, N_LANES = 10;
+const laneY = i => LANE_TOP + i * LANE_H;           // top of lane i
+const TRACK_LANES = [0,2,4,6,8];                     // railway tracks
+const PATH_LANES  = [1,3,5,7];                       // soldier paths
+const BASE_TOP = laneY(N_LANES);                     // 645
+const MARKET_BOT = LANE_TOP;
+
+/* ---------- persistent save (safe localStorage) ---------- */
+const SAVE_KEY = 'fourSucreSave';
+function loadSave(){
+  try{
+    const raw = localStorage.getItem(SAVE_KEY);
+    if(!raw) return null;
+    return JSON.parse(raw);
+  }catch(e){ return null; }
+}
+function writeSave(){
+  try{
+    localStorage.setItem(SAVE_KEY, JSON.stringify({
+      bestBank: save.bestBank, bestLevel: save.bestLevel,
+      upg: save.upg, muted: save.muted
+    }));
+  }catch(e){ /* storage bloqué : le jeu continue */ }
+}
+let save = Object.assign(
+  {bestBank:0, bestLevel:1, upg:{bag:0, life:0, drink:0}, muted:false},
+  loadSave() || {}
+);
+if(!save.upg) save.upg = {bag:0, life:0, drink:0};
+
+/* ---------- audio ---------- */
+let AC = null;
+function audio(){
+  if(!AC){
+    try{ AC = new (window.AudioContext || window.webkitAudioContext)(); }catch(e){ AC = null; }
+  }
+  if(AC && AC.state === 'suspended') AC.resume().catch(()=>{});
+  return AC;
+}
+function beep(freq, dur, type, vol, when){
+  if(save.muted) return;
+  const ac = audio(); if(!ac) return;
+  try{
+    const t = ac.currentTime + (when||0);
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.type = type||'square'; o.frequency.value = freq;
+    g.gain.setValueAtTime(vol||0.12, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
+    o.connect(g); g.connect(ac.destination);
+    o.start(t); o.stop(t+dur+0.02);
+  }catch(e){}
+}
+const snd = {
+  bell(){ beep(880,.14,'sine',.14); beep(660,.18,'sine',.12,.18); beep(880,.14,'sine',.1,.36); },
+  coin(){ beep(988,.08,'square',.1); beep(1319,.14,'square',.1,.08); },
+  bank(){ beep(784,.1,'triangle',.14); beep(988,.1,'triangle',.14,.1); beep(1175,.2,'triangle',.14,.2); },
+  power(){ for(let i=0;i<6;i++) beep(400+i*160,.07,'sawtooth',.08,i*.05); },
+  hit(){ beep(160,.3,'sawtooth',.18); beep(110,.4,'square',.15,.05); },
+  shake(){ beep(240,.06,'triangle',.12); beep(300,.06,'triangle',.1,.06); },
+  success(){ [523,659,784,1047,1319].forEach((f,i)=>beep(f,.16,'triangle',.14,i*.09)); },
+  bad(){ beep(200,.25,'square',.12); beep(150,.3,'square',.1,.1); },
+  pick(){ beep(600,.07,'sine',.1); }
+};
+
+/* ---------- game state ---------- */
+let state = 'start';   // start | play | shop | keypad | over
+let dave, lanesData, soldiers, can, particles, floats, level, lives, pocket, banked;
+let secret, vanOpen, treeShakes, treeShakeT, codeShown;
+let bankFlash = 0;
+
+const TREE = {x:52, y:706};
+const BUSH = {x:430, y:laneY(9)+28};
+const SHACK = {x:245, y:712};
+const MAX_UPG = 3;
+const bagValue   = () => 10 + save.upg.bag*8;
+const daveSpeed  = () => 150 * (1 - save.upg.bag*0.08);
+const drinkTime  = () => 6 + save.upg.drink*2;
+const bagCost    = ["30 $","80 $","160 $"];
+const lifeCost   = ["50 $","120 $","250 $"];
+const drinkCost  = ["25 $","60 $","120 $"];
+const COSTS = {bag:[30,80,160], life:[50,120,250], drink:[25,60,120]};
+
+function newGame(){
+  level = 1; pocket = 0; banked = 0;
+  lives = 3 + save.upg.life;
+  dave = {x:W/2, y:BASE_TOP+80, carrying:true, power:0, jump:0, invuln:0, face:1, walk:0};
+  soldiers = [];
+  syncSoldiers();
+  lanesData = TRACK_LANES.map((ln,i)=>({
+    lane: ln,
+    timer: 1.5 + Math.random()*4,
+    warn: 0,
+    train: null
+  }));
+  can = {active:false, x:0, y:0, life:0, timer: 8 + Math.random()*8};
+  particles = []; floats = [];
+  secret = String(1000 + Math.floor(Math.random()*9000));
+  vanOpen = false; treeShakes = 0; treeShakeT = 0; codeShown = false;
+  bankFlash = 0;
+}
+
+function soldierCount(){ return Math.min(8, 1 + Math.floor((level-1)/2)); }
+function syncSoldiers(){
+  while(soldiers.length < soldierCount()){
+    const i = soldiers.length;
+    const ln = PATH_LANES[i % PATH_LANES.length];
+    soldiers.push({
+      lane: ln,
+      x: Math.random()*W,
+      dir: Math.random()<.5?-1:1,
+      speed: 0
+    });
+  }
+  soldiers.forEach(s=> s.speed = Math.min(120, 42 + level*6));
+}
+
+/* ---------- input ---------- */
+const keys = {};
+window.addEventListener('keydown', e=>{
+  const k = e.key;
+  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(k)) e.preventDefault();
+  if(k===' '){ if(!keys.space) doAction(); keys.space = true; return; }
+  keys[k.toLowerCase()] = true;
+});
+window.addEventListener('keyup', e=>{
+  if(e.key===' '){ keys.space = false; return; }
+  keys[e.key.toLowerCase()] = false;
+});
+function axis(){
+  let dx=0, dy=0;
+  if(keys['arrowleft']||keys['a']||keys['q']) dx-=1;
+  if(keys['arrowright']||keys['d']) dx+=1;
+  if(keys['arrowup']||keys['w']||keys['z']) dy-=1;
+  if(keys['arrowdown']||keys['s']) dy+=1;
+  if(touch.left)dx-=1; if(touch.right)dx+=1; if(touch.up)dy-=1; if(touch.down)dy+=1;
+  if(dx&&dy){dx*=0.707;dy*=0.707;}
+  return [dx,dy];
+}
+
+/* touch */
+const touch = {up:false,down:false,left:false,right:false};
+function bindHold(id, prop){
+  const el = document.getElementById(id);
+  const on = e=>{e.preventDefault(); touch[prop]=true;};
+  const off = e=>{e.preventDefault(); touch[prop]=false;};
+  el.addEventListener('pointerdown', on);
+  el.addEventListener('pointerup', off);
+  el.addEventListener('pointercancel', off);
+  el.addEventListener('pointerleave', off);
+}
+bindHold('bUp','up'); bindHold('bDown','down');
+bindHold('bLeft','left'); bindHold('bRight','right');
+document.getElementById('bAct').addEventListener('pointerdown', e=>{e.preventDefault(); audio(); doAction();});
+if(('ontouchstart' in window) || matchMedia('(pointer: coarse)').matches){
+  document.body.classList.add('touch');
+}
+
+/* ---------- actions (Espace) ---------- */
+function near(p, r){ return Math.hypot(dave.x-p.x, dave.y-p.y) < r; }
+function doAction(){
+  if(state!=='play') return;
+  if(near(TREE, 55)){
+    treeShakes++; treeShakeT = .4; snd.shake();
+    if(treeShakes>=3 && !codeShown){
+      codeShown = true;
+      floats.push({x:TREE.x+40, y:TREE.y-70, t:5, big:true, txt:'CODE : '+secret});
+      snd.success();
+    }
+    return;
+  }
+  if(near(BUSH, 55) && !vanOpen){
+    openKeypad(); return;
+  }
+  if(dave.y > BASE_TOP && near(SHACK, 80)){
+    openShop(); return;
+  }
+  if(dave.power>0){ dave.jump = .55; }
+}
+
+/* ---------- main loop ---------- */
+let last = 0;
+function loop(ts){
+  const dt = Math.min(0.05, (ts-last)/1000 || 0.016);
+  last = ts;
+  if(state==='play') update(dt);
+  draw(dt);
+  requestAnimationFrame(loop);
+}
+
+function update(dt){
+  /* Dave movement */
+  let sp = daveSpeed();
+  if(dave.power>0) sp *= 1.8;
+  const [dx,dy] = axis();
+  dave.x = Math.max(16, Math.min(W-16, dave.x + dx*sp*dt));
+  dave.y = Math.max(30, Math.min(H-40, dave.y + dy*sp*dt));
+  if(dx) dave.face = dx>0?1:-1;
+  dave.walk += (dx||dy) ? dt*10 : 0;
+  if(dave.power>0) dave.power -= dt;
+  if(dave.jump>0) dave.jump -= dt;
+  if(dave.invuln>0) dave.invuln -= dt;
+  if(treeShakeT>0) treeShakeT -= dt;
+  if(bankFlash>0) bankFlash -= dt;
+
+  /* market : vendre */
+  if(dave.y < MARKET_BOT && dave.carrying){
+    dave.carrying = false;
+    pocket += bagValue();
+    floats.push({x:dave.x, y:dave.y-20, t:1.6, txt:'+'+bagValue()+' $'});
+    snd.coin();
+  }
+  /* base : banquer + reprendre du sucre */
+  if(dave.y > BASE_TOP){
+    if(pocket>0){
+      banked += pocket;
+      floats.push({x:dave.x, y:dave.y-24, t:2, txt:pocket+' $ à l’abri !'});
+      pocket = 0;
+      level++;
+      syncSoldiers();
+      bankFlash = 1;
+      snd.bank();
+      if(banked > save.bestBank){ save.bestBank = banked; writeSave(); }
+      if(level > save.bestLevel){ save.bestLevel = level; writeSave(); }
+    }
+    if(!dave.carrying){ dave.carrying = true; snd.pick(); }
+  }
+
+  /* trains */
+  for(const t of lanesData){
+    if(t.train){
+      t.train.x += t.train.speed * t.train.dir * dt;
+      const len = t.train.len;
+      if((t.train.dir>0 && t.train.x > W+60) || (t.train.dir<0 && t.train.x < -len-60)){
+        t.train = null;
+        t.timer = Math.max(2.0, 5.5 - level*0.22) + Math.random()*2.5;
+      }
+    } else if(t.warn>0){
+      t.warn -= dt;
+      if(t.warn<=0){
+        const dir = Math.random()<.5?1:-1;
+        const len = 160 + Math.floor(Math.random()*3)*70;
+        t.train = {
+          dir, len,
+          x: dir>0 ? -len-40 : W+40,
+          speed: Math.min(330, 110 + level*14 + Math.random()*40)
+        };
+      }
+    } else {
+      t.timer -= dt;
+      if(t.timer<=0){ t.warn = 1.4; snd.bell(); }
+    }
+  }
+
+  /* soldiers */
+  for(const s of soldiers){
+    s.x += s.dir * s.speed * dt;
+    if(s.x<20){s.x=20;s.dir=1;} if(s.x>W-20){s.x=W-20;s.dir=-1;}
+  }
+
+  /* energy can */
+  if(can.active){
+    can.life -= dt;
+    if(can.life<=0){ can.active=false; can.timer = 10+Math.random()*10; }
+    else if(Math.hypot(dave.x-can.x, dave.y-can.y) < 26){
+      can.active = false; can.timer = 14+Math.random()*10;
+      dave.power = drinkTime();
+      snd.power();
+      floats.push({x:dave.x,y:dave.y-24,t:1.6,txt:'SUPER DAVE !'});
+    }
+  } else {
+    can.timer -= dt;
+    if(can.timer<=0){
+      const ln = PATH_LANES[Math.floor(Math.random()*PATH_LANES.length)];
+      can.x = 40 + Math.random()*(W-80);
+      can.y = laneY(ln) + LANE_H/2;
+      can.life = 9; can.active = true;
+    }
+  }
+
+  /* collisions */
+  if(dave.power<=0 && dave.invuln<=0 && dave.jump<=0){
+    // trains
+    for(const t of lanesData){
+      if(!t.train) continue;
+      const ty = laneY(t.lane), tr = t.train;
+      if(dave.y+12 > ty+6 && dave.y-12 < ty+LANE_H-6){
+        const x0 = tr.dir>0 ? tr.x : tr.x - tr.len;
+        if(dave.x+10 > x0 && dave.x-10 < x0+tr.len){ hitDave(); break; }
+      }
+    }
+    // soldiers
+    if(dave.invuln<=0){
+      for(const s of soldiers){
+        const sy = laneY(s.lane)+LANE_H/2;
+        if(Math.hypot(dave.x-s.x, dave.y-sy) < 24){ hitDave(); break; }
+      }
+    }
+  }
+
+  /* particles / floats */
+  for(const p of particles){
+    p.x+=p.vx*dt; p.y+=p.vy*dt; p.vy+=300*dt; p.t-=dt; p.r+=p.vr*dt;
+  }
+  particles = particles.filter(p=>p.t>0);
+  for(const f of floats){ f.y-=22*dt; f.t-=dt; }
+  floats = floats.filter(f=>f.t>0);
+}
+
+function hitDave(){
+  snd.hit();
+  lives--;
+  const lost = pocket;
+  pocket = 0;
+  dave.carrying = false;
+  floats.push({x:dave.x, y:dave.y-20, t:2, txt: lost>0 ? ('-'+lost+' $ perdus !') : 'Aïe !'});
+  for(let i=0;i<14;i++) particles.push({
+    x:dave.x, y:dave.y, vx:(Math.random()-.5)*220, vy:-Math.random()*200,
+    t:.7, r:0, vr:(Math.random()-.5)*10, c:'#6b4a2a', s:4
+  });
+  if(lives<=0){ gameOver(); return; }
+  dave.x = W/2; dave.y = BASE_TOP+80; dave.invuln = 2; dave.power = 0;
+}
+
+function gameOver(){
+  state = 'over';
+  if(banked > save.bestBank) save.bestBank = banked;
+  if(level > save.bestLevel) save.bestLevel = level;
+  writeSave();
+  document.getElementById('ovMoney').textContent = banked;
+  document.getElementById('ovLevel').textContent = level;
+  document.getElementById('ovBest').textContent = save.bestBank;
+  document.getElementById('ovBestLvl').textContent = save.bestLevel;
+  document.getElementById('overScr').classList.remove('hidden');
+}
+
+/* ---------- van / confetti ---------- */
+function vanBonus(){
+  vanOpen = true;
+  const bonus = 150 + level*25;
+  banked += bonus;
+  if(banked > save.bestBank){ save.bestBank = banked; writeSave(); }
+  floats.push({x:BUSH.x-60, y:BUSH.y-50, t:3, big:true, txt:'+'+bonus+' $ !!!'});
+  snd.success();
+  const cols = ['#e74c3c','#f1c40f','#2ecc71','#3498db','#9b59b6','#e67e22'];
+  for(let i=0;i<90;i++) particles.push({
+    x:BUSH.x, y:BUSH.y-20,
+    vx:(Math.random()-.5)*420, vy:-120-Math.random()*320,
+    t:1.2+Math.random()*1.2, r:Math.random()*6, vr:(Math.random()-.5)*14,
+    c:cols[i%cols.length], s:5+Math.random()*4
+  });
+}
+
+/* ================= DRAW ================= */
+function draw(dt){
+  ctx.clearRect(0,0,W,H);
+
+  /* fond terre */
+  ctx.fillStyle = '#cdb384'; ctx.fillRect(0,0,W,H);
+  // texture légère
+  ctx.fillStyle = 'rgba(138,109,69,.12)';
+  for(let i=0;i<30;i++){ const x=(i*97)%W, y=(i*211)%H; ctx.fillRect(x,y,26,5); }
+
+  drawMarket();
+  for(let i=0;i<N_LANES;i++){
+    if(TRACK_LANES.includes(i)) drawTrack(laneY(i));
+    else if(PATH_LANES.includes(i)) drawPath(laneY(i));
+    else drawGrass(laneY(i));
+  }
+  drawBase();
+  drawTree();
+  drawBushVan();
+
+  /* warning + trains */
+  for(const t of lanesData){
+    const y = laneY(t.lane);
+    if(t.warn>0 && Math.floor(t.warn*8)%2===0){
+      ctx.fillStyle = '#c0392b';
+      ctx.beginPath(); ctx.arc(14, y+LANE_H/2, 9, 0, 7); ctx.fill();
+      ctx.beginPath(); ctx.arc(W-14, y+LANE_H/2, 9, 0, 7); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.font='bold 13px Georgia'; ctx.textAlign='center';
+      ctx.fillText('!', 14, y+LANE_H/2+5); ctx.fillText('!', W-14, y+LANE_H/2+5);
+    }
+    if(t.train) drawTrain(t.train, y);
+  }
+
+  for(const s of soldiers) drawSoldier(s);
+  if(can.active) drawCan();
+  drawDave();
+
+  /* particles */
+  for(const p of particles){
+    ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.r);
+    ctx.fillStyle = p.c; ctx.globalAlpha = Math.max(0,Math.min(1,p.t));
+    ctx.fillRect(-p.s/2,-p.s/2,p.s,p.s); ctx.restore();
+  }
+  ctx.globalAlpha = 1;
+
+  /* floats */
+  for(const f of floats){
+    ctx.font = f.big ? 'bold 26px Georgia' : 'bold 16px Georgia';
+    ctx.textAlign='center';
+    ctx.strokeStyle='rgba(42,32,21,.9)'; ctx.lineWidth=4;
+    ctx.strokeText(f.txt, f.x, f.y);
+    ctx.fillStyle = f.big ? '#ffd24a' : '#fff';
+    ctx.fillText(f.txt, f.x, f.y);
+  }
+
+  drawHUD();
+
+  /* vignette sepia */
+  const g = ctx.createRadialGradient(W/2,H/2,H*0.35,W/2,H/2,H*0.75);
+  g.addColorStop(0,'rgba(0,0,0,0)'); g.addColorStop(1,'rgba(62,47,28,.35)');
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+}
+
+function drawMarket(){
+  ctx.fillStyle = '#b89a6b'; ctx.fillRect(0,0,W,MARKET_BOT);
+  // étals
+  for(let i=0;i<4;i++){
+    const x = 18 + i*120;
+    ctx.fillStyle = '#6b4a2a'; ctx.fillRect(x, 34, 92, 48);
+    // auvent rayé
+    for(let s=0;s<6;s++){
+      ctx.fillStyle = s%2 ? '#e8d9b5' : '#a0522d';
+      ctx.fillRect(x-4+s*17, 22, 17, 16);
+    }
+    ctx.fillStyle = '#e8d9b5';
+    ctx.font='11px Georgia'; ctx.textAlign='center';
+  }
+  ctx.fillStyle = '#3e2f1c'; ctx.font='bold 13px Georgia'; ctx.textAlign='center';
+  ctx.fillText('MARCHÉ', W/2, 93);
+}
+
+function drawTrack(y){
+  ctx.fillStyle = '#9a7b4f'; ctx.fillRect(0,y,W,LANE_H);
+  // traverses
+  ctx.fillStyle = '#5a4030';
+  for(let x=4;x<W;x+=28) ctx.fillRect(x, y+10, 16, LANE_H-20);
+  // rails
+  ctx.fillStyle = '#3e2f1c';
+  ctx.fillRect(0, y+13, W, 5);
+  ctx.fillRect(0, y+LANE_H-18, W, 5);
+}
+function drawPath(y){
+  ctx.fillStyle = '#d8c49a'; ctx.fillRect(0,y,W,LANE_H);
+  ctx.fillStyle = 'rgba(138,109,69,.25)';
+  for(let x=10;x<W;x+=60) ctx.fillRect(x, y+LANE_H/2-2, 30, 4);
+}
+function drawGrass(y){
+  ctx.fillStyle = '#b3a86a'; ctx.fillRect(0,y,W,LANE_H);
+  ctx.fillStyle = '#8f8549';
+  for(let x=8;x<W;x+=34){ ctx.fillRect(x, y+14, 2,8); ctx.fillRect(x+5, y+30, 2,8); }
+}
+
+function drawBase(){
+  ctx.fillStyle = '#c4a877'; ctx.fillRect(0,BASE_TOP,W,H-BASE_TOP);
+  if(bankFlash>0){
+    ctx.fillStyle = `rgba(255,210,74,${bankFlash*.3})`;
+    ctx.fillRect(0,BASE_TOP,W,H-BASE_TOP);
+  }
+  // cabane
+  const x=SHACK.x-55, y=SHACK.y-30;
+  ctx.fillStyle = '#6b4a2a'; ctx.fillRect(x,y,110,62);
+  ctx.fillStyle = '#4e3620';
+  ctx.beginPath(); ctx.moveTo(x-12,y); ctx.lineTo(x+55,y-34); ctx.lineTo(x+122,y); ctx.fill();
+  ctx.fillStyle = '#3e2f1c'; ctx.fillRect(x+42,y+22,26,40);
+  // planches
+  ctx.strokeStyle='rgba(62,47,28,.5)'; ctx.lineWidth=1;
+  for(let i=1;i<5;i++){ ctx.beginPath(); ctx.moveTo(x,y+i*12); ctx.lineTo(x+110,y+i*12); ctx.stroke(); }
+  ctx.fillStyle = '#e8d9b5'; ctx.font='bold 13px Georgia'; ctx.textAlign='center';
+  ctx.fillText('BASE', SHACK.x, y-6);
+  // tas de sucre
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.moveTo(SHACK.x+75, SHACK.y+32); ctx.lineTo(SHACK.x+95, SHACK.y-2); ctx.lineTo(SHACK.x+115, SHACK.y+32); ctx.fill();
+  ctx.fillStyle = '#ddd';
+  ctx.beginPath(); ctx.moveTo(SHACK.x+95, SHACK.y-2); ctx.lineTo(SHACK.x+105, SHACK.y+32); ctx.lineTo(SHACK.x+115, SHACK.y+32); ctx.fill();
+  // panneau boutique
+  ctx.fillStyle='#8a6d45'; ctx.fillRect(SHACK.x-105, SHACK.y+6, 6, 30);
+  ctx.fillRect(SHACK.x-128, SHACK.y-6, 52, 18);
+  ctx.fillStyle='#e8d9b5'; ctx.font='bold 10px Georgia';
+  ctx.fillText('BOUTIQUE', SHACK.x-102, SHACK.y+6);
+}
+
+function drawTree(){
+  const sh = treeShakeT>0 ? Math.sin(treeShakeT*60)*4 : 0;
+  ctx.fillStyle = '#5a4030';
+  ctx.fillRect(TREE.x-6+sh*.3, TREE.y-28, 12, 42);
+  ctx.fillStyle = '#7a7a3d';
+  ctx.beginPath(); ctx.arc(TREE.x+sh, TREE.y-44, 26, 0, 7); ctx.fill();
+  ctx.fillStyle = '#8f8549';
+  ctx.beginPath(); ctx.arc(TREE.x-16+sh, TREE.y-32, 17, 0, 7); ctx.fill();
+  ctx.beginPath(); ctx.arc(TREE.x+17+sh, TREE.y-34, 15, 0, 7); ctx.fill();
+  if(codeShown){
+    ctx.fillStyle='#3e2f1c'; ctx.font='bold 12px Georgia'; ctx.textAlign='center';
+    ctx.fillText(secret, TREE.x, TREE.y+24);
+  }
+}
+
+function drawBushVan(){
+  if(vanOpen){
+    // van découvert
+    ctx.fillStyle = '#7d6244';
+    ctx.fillRect(BUSH.x-34, BUSH.y-26, 64, 30);
+    ctx.fillStyle = '#5a4030';
+    ctx.fillRect(BUSH.x+14, BUSH.y-20, 16, 12);
+    ctx.fillStyle='#3e2f1c';
+    ctx.beginPath(); ctx.arc(BUSH.x-20, BUSH.y+6, 7,0,7); ctx.fill();
+    ctx.beginPath(); ctx.arc(BUSH.x+16, BUSH.y+6, 7,0,7); ctx.fill();
+    ctx.fillStyle='#ffd24a'; ctx.fillRect(BUSH.x-28, BUSH.y-20, 14, 10);
+  } else {
+    ctx.fillStyle = '#6d6d35';
+    ctx.beginPath(); ctx.arc(BUSH.x, BUSH.y-8, 24, 0, 7); ctx.fill();
+    ctx.fillStyle = '#7a7a3d';
+    ctx.beginPath(); ctx.arc(BUSH.x-18, BUSH.y, 16, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.arc(BUSH.x+16, BUSH.y-2, 15, 0, 7); ctx.fill();
+    // un bout de van qui dépasse
+    ctx.fillStyle = '#5a4030'; ctx.fillRect(BUSH.x-30, BUSH.y+2, 14, 8);
+  }
+}
+
+function drawTrain(tr, y){
+  const x0 = tr.dir>0 ? tr.x : tr.x - tr.len;
+  const cy = y + LANE_H/2;
+  // wagons
+  const nCars = Math.round(tr.len/70);
+  for(let i=0;i<nCars;i++){
+    const cx = x0 + i*70;
+    ctx.fillStyle = i===( tr.dir>0 ? nCars-1 : 0) ? '#4e3620' : '#6b4a2a';
+    ctx.fillRect(cx+3, cy-18, 64, 36);
+    ctx.strokeStyle='#3e2f1c'; ctx.lineWidth=2; ctx.strokeRect(cx+3, cy-18, 64, 36);
+    // roues
+    ctx.fillStyle='#2a2015';
+    ctx.beginPath(); ctx.arc(cx+18, cy+18, 6,0,7); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx+52, cy+18, 6,0,7); ctx.fill();
+  }
+  // locomotive = wagon de tête
+  const hx = tr.dir>0 ? x0+tr.len-70 : x0;
+  ctx.fillStyle = '#3e2f1c';
+  ctx.fillRect(hx+3, cy-24, 64, 42);
+  // cheminée
+  const chx = tr.dir>0 ? hx+54 : hx+10;
+  ctx.fillRect(chx, cy-34, 10, 12);
+  // fumée
+  ctx.fillStyle='rgba(120,105,85,.5)';
+  ctx.beginPath(); ctx.arc(chx+5 - tr.dir*12, cy-42, 7,0,7); ctx.fill();
+  ctx.beginPath(); ctx.arc(chx+5 - tr.dir*26, cy-48, 9,0,7); ctx.fill();
+  // phare
+  ctx.fillStyle='#ffd24a';
+  ctx.fillRect(tr.dir>0 ? hx+62 : hx+2, cy-8, 5, 10);
+}
+
+function drawSoldier(s){
+  const y = laneY(s.lane)+LANE_H/2;
+  const step = Math.sin(performance.now()/120 + s.x)*3;
+  ctx.save(); ctx.translate(s.x, y);
+  // jambes
+  ctx.strokeStyle='#3e3a55'; ctx.lineWidth=4;
+  ctx.beginPath(); ctx.moveTo(-3,6); ctx.lineTo(-4-step*.5,16); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(3,6); ctx.lineTo(4+step*.5,16); ctx.stroke();
+  // corps
+  ctx.fillStyle='#4a4668'; ctx.fillRect(-7,-8,14,16);
+  // tête
+  ctx.fillStyle='#d9a97b'; ctx.beginPath(); ctx.arc(0,-14,6,0,7); ctx.fill();
+  // képi
+  ctx.fillStyle='#3e3a55'; ctx.fillRect(-7,-21,14,5); ctx.fillRect(-7+(s.dir>0?6:-2),-18,8,3);
+  // fusil sur l'épaule
+  ctx.strokeStyle='#5a4030'; ctx.lineWidth=3;
+  ctx.beginPath(); ctx.moveTo(s.dir*6,-4); ctx.lineTo(s.dir*10,-24); ctx.stroke();
+  ctx.restore();
+}
+
+function drawCan(){
+  const bob = Math.sin(performance.now()/200)*3;
+  ctx.save(); ctx.translate(can.x, can.y+bob);
+  if(can.life<3 && Math.floor(can.life*6)%2===0) ctx.globalAlpha=.4;
+  ctx.fillStyle='#1f8a5f'; ctx.fillRect(-8,-13,16,26);
+  ctx.fillStyle='#c0c0c0'; ctx.fillRect(-8,-15,16,4); ctx.fillRect(-8,11,16,4);
+  ctx.fillStyle='#ffd24a';
+  ctx.beginPath(); ctx.moveTo(2,-8); ctx.lineTo(-4,2); ctx.lineTo(0,2); ctx.lineTo(-2,9); ctx.lineTo(5,-2); ctx.lineTo(1,-2); ctx.closePath(); ctx.fill();
+  ctx.restore(); ctx.globalAlpha=1;
+}
+
+function drawDaveSprite(c, x, y, scale, face, carrying, walk){
+  c.save(); c.translate(x,y); c.scale(scale*face, scale);
+  const leg = Math.sin(walk*2)*3;
+  // pattes
+  c.strokeStyle='#2a1a0a'; c.lineWidth=2;
+  for(let i=-1;i<=1;i++){
+    c.beginPath(); c.moveTo(i*5,4); c.lineTo(i*5-4, 12+(i===0?-leg:leg)); c.stroke();
+    c.beginPath(); c.moveTo(i*5,4); c.lineTo(i*5+4, 12+(i===0?leg:-leg)); c.stroke();
+  }
+  // abdomen
+  c.fillStyle='#4e2c12';
+  c.beginPath(); c.ellipse(-10,2,9,7,0,0,7); c.fill();
+  // thorax
+  c.fillStyle='#6b3a16';
+  c.beginPath(); c.ellipse(0,0,7,6,0,0,7); c.fill();
+  // tête
+  c.fillStyle='#6b3a16';
+  c.beginPath(); c.arc(10,-4,6,0,7); c.fill();
+  // yeux
+  c.fillStyle='#fff'; c.beginPath(); c.arc(12,-6,2.6,0,7); c.fill();
+  c.fillStyle='#000'; c.beginPath(); c.arc(13,-6,1.2,0,7); c.fill();
+  // sourire
+  c.strokeStyle='#2a1a0a'; c.lineWidth=1.2;
+  c.beginPath(); c.arc(11,-2.5,2.5,0.2,2.4); c.stroke();
+  // antennes
+  c.lineWidth=1.5;
+  c.beginPath(); c.moveTo(9,-9); c.quadraticCurveTo(10,-16,14,-16); c.stroke();
+  c.beginPath(); c.moveTo(12,-9); c.quadraticCurveTo(14,-15,17,-14); c.stroke();
+  c.fillStyle='#2a1a0a';
+  c.beginPath(); c.arc(14,-16,1.5,0,7); c.fill();
+  c.beginPath(); c.arc(17,-14,1.5,0,7); c.fill();
+  // cube de sucre sur le dos
+  if(carrying){
+    c.fillStyle='#fff'; c.fillRect(-9,-16,13,13);
+    c.strokeStyle='#bbb'; c.lineWidth=1; c.strokeRect(-9,-16,13,13);
+    c.fillStyle='#e8e8e8'; c.fillRect(-9,-16,13,4);
+  }
+  c.restore();
+}
+
+function drawDave(){
+  const flash = (dave.power>0 && Math.floor(performance.now()/90)%2===0);
+  const blink = (dave.invuln>0 && Math.floor(performance.now()/120)%2===0);
+  if(blink) return;
+  const jumpH = dave.jump>0 ? Math.sin((0.55-dave.jump)/0.55*Math.PI)*34 : 0;
+  // ombre
+  ctx.fillStyle='rgba(42,32,21,.3)';
+  ctx.beginPath(); ctx.ellipse(dave.x, dave.y+14, 13 - jumpH*.15, 5 - jumpH*.08, 0, 0, 7); ctx.fill();
+  if(flash){
+    ctx.save();
+    ctx.shadowColor = '#ffd24a'; ctx.shadowBlur = 18;
+  }
+  const sc = 1 + (jumpH/34)*0.45 + (dave.power>0?0.12:0);
+  drawDaveSprite(ctx, dave.x, dave.y - jumpH, sc, dave.face, dave.carrying, dave.walk);
+  if(flash) ctx.restore();
+}
+
+function drawHUD(){
+  ctx.fillStyle='rgba(62,47,28,.85)';
+  ctx.fillRect(0,0,W,0); // (HUD drawn over market top strip)
+  const y=795;
+  // bande du bas discrète ? Non: HUD en haut sur le marché
+  ctx.save();
+  ctx.fillStyle='rgba(42,32,21,.78)';
+  ctx.fillRect(0,0,W,20);
+  ctx.fillStyle='#e8d9b5'; ctx.font='bold 13px Georgia';
+  ctx.textAlign='left';
+  let hearts=''; for(let i=0;i<lives;i++) hearts+='♥';
+  ctx.fillStyle='#e05a4e'; ctx.fillText(hearts, 8, 15);
+  ctx.fillStyle='#e8d9b5';
+  ctx.textAlign='center';
+  ctx.fillText('Banque : '+banked+' $   Poche : '+pocket+' $', W/2, 15);
+  ctx.textAlign='right';
+  ctx.fillText('Niv. '+level, W-50, 15);
+  ctx.restore();
+  // barre de pouvoir
+  if(dave.power>0){
+    const w = Math.max(0, dave.power/drinkTime())*200;
+    ctx.fillStyle='rgba(42,32,21,.7)'; ctx.fillRect(W/2-104, 26, 208, 14);
+    ctx.fillStyle = Math.floor(performance.now()/150)%2 ? '#ffd24a' : '#1f8a5f';
+    ctx.fillRect(W/2-100, 29, w, 8);
+  }
+  // code découvert
+  if(codeShown){
+    ctx.fillStyle='rgba(42,32,21,.7)'; ctx.fillRect(2, H-24, 120, 20);
+    ctx.fillStyle='#ffd24a'; ctx.font='bold 12px Georgia'; ctx.textAlign='left';
+    ctx.fillText('Code : '+secret, 8, H-9);
+  }
+}
+
+/* ---------- hero (start screen) ---------- */
+(function(){
+  const hc = document.getElementById('daveHero').getContext('2d');
+  hc.clearRect(0,0,140,120);
+  drawDaveSprite(hc, 62, 70, 3, 1, true, 1.2);
+})();
+
+/* ================= UI / screens ================= */
+const $ = id => document.getElementById(id);
+
+function startGame(){
+  audio();
+  newGame();
+  $('startScr').classList.add('hidden');
+  $('overScr').classList.add('hidden');
+  state = 'play';
+}
+$('playBtn').addEventListener('click', startGame);
+$('replayBtn').addEventListener('click', startGame);
+
+/* mute */
+function refreshMute(){ $('muteBtn').innerHTML = save.muted ? '&#128263;' : '&#128266;'; }
+$('muteBtn').addEventListener('click', ()=>{ save.muted=!save.muted; writeSave(); refreshMute(); audio(); });
+refreshMute();
+
+/* ---------- shop ---------- */
+function pips(n){ let s=''; for(let i=0;i<MAX_UPG;i++) s += i<n ? '●' : '○'; return s; }
+function refreshShop(){
+  $('shopMoney').textContent = banked;
+  const defs = [['bag','buyBag','pipBag'],['life','buyLife','pipLife'],['drink','buyDrink','pipDrink']];
+  for(const [k,btn,pip] of defs){
+    const lvl = save.upg[k];
+    $(pip).textContent = pips(lvl);
+    const b = $(btn);
+    if(lvl>=MAX_UPG){ b.textContent='MAX'; b.disabled=true; }
+    else{
+      const cost = COSTS[k][lvl];
+      b.textContent = cost+' $';
+      b.disabled = banked < cost;
+    }
+  }
+}
+function buy(k){
+  const lvl = save.upg[k];
+  if(lvl>=MAX_UPG) return;
+  const cost = COSTS[k][lvl];
+  if(banked < cost){ snd.bad(); return; }
+  banked -= cost;
+  save.upg[k]++;
+  if(k==='life') lives++;
+  writeSave();
+  snd.coin();
+  refreshShop();
+}
+$('buyBag').addEventListener('click', ()=>buy('bag'));
+$('buyLife').addEventListener('click', ()=>buy('life'));
+$('buyDrink').addEventListener('click', ()=>buy('drink'));
+function openShop(){ state='shop'; refreshShop(); $('shop').classList.remove('hidden'); }
+$('closeShop').addEventListener('click', ()=>{ $('shop').classList.add('hidden'); state='play'; });
+
+/* ---------- keypad ---------- */
+let kpVal = '';
+function kpRefresh(){ $('kpDisplay').textContent = kpVal || ' '; $('kpDisplay').classList.remove('bad'); }
+function openKeypad(){ state='keypad'; kpVal=''; kpRefresh(); $('keypad').classList.remove('hidden'); }
+function closeKeypad(){ $('keypad').classList.add('hidden'); state='play'; }
+$('kpClose').addEventListener('click', closeKeypad);
+$('kpClear').addEventListener('click', ()=>{ kpVal=''; kpRefresh(); });
+$('kpOk').addEventListener('click', ()=>{
+  if(kpVal === secret){
+    closeKeypad();
+    vanBonus();
+  } else {
+    snd.bad();
+    $('kpDisplay').classList.add('bad');
+    kpVal='';
+    setTimeout(kpRefresh, 450);
+  }
+});
+document.querySelectorAll('.kpGrid button').forEach(b=>{
+  if(b.id) return;
+  b.addEventListener('click', ()=>{
+    if(kpVal.length<4){ kpVal += b.textContent; kpRefresh(); snd.pick(); }
+  });
+});
+
+/* ---------- resize ---------- */
+function resize(){
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const s = Math.min(vw/W, vh/H);
+  cv.style.width = (W*s)+'px';
+  cv.style.height = (H*s)+'px';
+}
+window.addEventListener('resize', resize);
+resize();
+
+/* empêcher le scroll tactile sur la page */
+document.addEventListener('touchmove', e=>{ e.preventDefault(); }, {passive:false});
+
+/* hook de test (lecture seule utile pour vérifier le jeu) */
+window.FS = {
+  get state(){return state;}, get banked(){return banked;}, get pocket(){return pocket;},
+  get level(){return level;}, get lives(){return lives;}, get secret(){return secret;},
+  get dave(){return dave;}, get vanOpen(){return vanOpen;},
+  _debug: {
+    setDave(x,y){ dave.x=x; dave.y=y; },
+    setLives(n){ lives=n; },
+    forceHit(){ hitDave(); },
+    action(){ doAction(); }
+  }
+};
+
+newGame(); // pour dessiner le fond derrière l'écran titre
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
