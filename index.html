@@ -388,7 +388,18 @@ function bindHold(id, prop){
 }
 bindHold('bUp','up'); bindHold('bDown','down');
 bindHold('bLeft','left'); bindHold('bRight','right');
-document.getElementById('bAct').addEventListener('pointerdown', e=>{e.preventDefault(); audio(); doAction();});
+const bActEl = document.getElementById('bAct');
+let lastActTap = 0;
+function actTap(e){
+  e.preventDefault();
+  const n = Date.now();
+  if(n - lastActTap < 120) return;   // anti double déclenchement pointer+click
+  lastActTap = n;
+  audio(); doAction();
+}
+bActEl.addEventListener('pointerdown', actTap);
+bActEl.addEventListener('click', actTap);
+bActEl.addEventListener('touchstart', actTap, {passive:false});
 if(('ontouchstart' in window) || matchMedia('(pointer: coarse)').matches){
   document.body.classList.add('touch');
 }
@@ -409,10 +420,12 @@ function doAction(){
   if(near(BUSH, 55) && !vanOpen){
     openKeypad(); return;
   }
-  if(dave.y > BASE_TOP && near(SHACK, 80)){
+  if(dave.y > BASE_TOP){
     openShop(); return;
   }
-  if(dave.power>0){ dave.jump = .55; }
+  if(dave.power>0){ dave.jump = .55; return; }
+  /* rien à proximité : petit saut pour montrer que le bouton répond */
+  dave.jump = .3; snd.pick();
 }
 
 /* ---------- main loop ---------- */
@@ -516,7 +529,7 @@ function update(dt){
   }
 
   /* collisions */
-  if(dave.power<=0 && dave.invuln<=0 && dave.jump<=0){
+  if(dave.power<=0 && dave.invuln<=0){
     // trains
     for(const t of lanesData){
       if(!t.train) continue;
