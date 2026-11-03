@@ -12,7 +12,9 @@
     --sepia-paper:#e8d9b5;
     --accent:#b5541e;
   }
-  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;
+    user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;}
+  button,.btn,.tbtn{touch-action:manipulation;}
   html,body{
     width:100%;height:100%;
     overflow:hidden;
@@ -31,6 +33,7 @@
   }
   canvas{
     display:block;
+    touch-action:none;
     background:var(--sepia-light);
     image-rendering:auto;
     border-radius:6px;
@@ -300,7 +303,7 @@ let dave, lanesData, soldiers, can, particles, floats, level, lives, pocket, ban
 let secret, vanOpen, treeShakes, treeShakeT, codeShown;
 let bankFlash = 0;
 
-const TREE = {x:52, y:706};
+const TREE = {x:300, y:laneY(9)+30};
 const BUSH = {x:430, y:laneY(9)+28};
 const SHACK = {x:245, y:712};
 const MAX_UPG = 3;
@@ -373,12 +376,15 @@ function axis(){
 const touch = {up:false,down:false,left:false,right:false};
 function bindHold(id, prop){
   const el = document.getElementById(id);
-  const on = e=>{e.preventDefault(); touch[prop]=true;};
+  el.addEventListener('pointerdown', e=>{
+    e.preventDefault();
+    try{ el.setPointerCapture(e.pointerId); }catch(err){}
+    touch[prop]=true;
+  });
   const off = e=>{e.preventDefault(); touch[prop]=false;};
-  el.addEventListener('pointerdown', on);
   el.addEventListener('pointerup', off);
   el.addEventListener('pointercancel', off);
-  el.addEventListener('pointerleave', off);
+  el.addEventListener('lostpointercapture', off);
 }
 bindHold('bUp','up'); bindHold('bDown','down');
 bindHold('bLeft','left'); bindHold('bRight','right');
@@ -989,16 +995,30 @@ document.querySelectorAll('.kpGrid button').forEach(b=>{
 
 /* ---------- resize ---------- */
 function resize(){
-  const vw = window.innerWidth, vh = window.innerHeight;
+  const vv = window.visualViewport;
+  const vw = vv ? vv.width : window.innerWidth;
+  const vh = vv ? vv.height : window.innerHeight;
   const s = Math.min(vw/W, vh/H);
   cv.style.width = (W*s)+'px';
   cv.style.height = (H*s)+'px';
 }
 window.addEventListener('resize', resize);
+window.addEventListener('orientationchange', ()=>setTimeout(resize,250));
+if(window.visualViewport) visualViewport.addEventListener('resize', resize);
 resize();
 
 /* empêcher le scroll tactile sur la page */
 document.addEventListener('touchmove', e=>{ e.preventDefault(); }, {passive:false});
+/* empêcher le zoom sur iPhone/Android : pincement, double-tap, menu long-press */
+document.addEventListener('gesturestart', e=>{ e.preventDefault(); });
+document.addEventListener('dblclick', e=>{ e.preventDefault(); });
+document.addEventListener('contextmenu', e=>{ e.preventDefault(); });
+let lastTouchEnd = 0;
+document.addEventListener('touchend', e=>{
+  const now = Date.now();
+  if(now - lastTouchEnd < 350 && !e.target.closest('button')) e.preventDefault();
+  lastTouchEnd = now;
+}, {passive:false});
 
 /* hook de test (lecture seule utile pour vérifier le jeu) */
 window.FS = {
