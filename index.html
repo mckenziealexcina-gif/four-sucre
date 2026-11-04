@@ -293,6 +293,7 @@ const snd = {
   hit(){ beep(160,.3,'sawtooth',.18); beep(110,.4,'square',.15,.05); },
   shake(){ beep(240,.06,'triangle',.12); beep(300,.06,'triangle',.1,.06); },
   success(){ [523,659,784,1047,1319].forEach((f,i)=>beep(f,.16,'triangle',.14,i*.09)); },
+  whistle(){ beep(520,.45,'triangle',.12); beep(520,.45,'triangle',.1,.5); beep(390,.7,'triangle',.12,1.0); },
   bad(){ beep(200,.25,'square',.12); beep(150,.3,'square',.1,.1); },
   pick(){ beep(600,.07,'sine',.1); }
 };
@@ -304,6 +305,45 @@ let secret, vanOpen, treeShakes, treeShakeT, codeShown;
 let bankFlash = 0;
 
 const TREE = {x:300, y:laneY(9)+30};
+
+/* ---------- régions / pays ---------- */
+const THEMES = [
+ {name:'FAR WEST', ground:'#cdb384', market:'#b89a6b', stall:'#6b4a2a', awnA:'#e8d9b5', awnB:'#a0522d',
+  trackBed:'#9a7b4f', tie:'#5a4030', rail:'#3e2f1c', path:'#d8c49a', grass:'#b3a86a', grass2:'#8f8549', base:'#c4a877',
+  train:{body:'#6b4a2a', loco:'#3e2f1c', accent:'#ffd24a'},
+  guard:{coat:'#4a4668', hat:'#3e3a55', skin:'#d9a97b', type:'kepi'},
+  decor:'cactus'},
+ {name:'MEXIQUE', ground:'#dfa96b', market:'#c98f5a', stall:'#8c4f1f', awnA:'#f5e6c4', awnB:'#a93226',
+  trackBed:'#c08b52', tie:'#6e4a22', rail:'#4a2f12', path:'#ecd09a', grass:'#c9b36a', grass2:'#9a8a3f', base:'#d6a46b',
+  train:{body:'#b5541e', loco:'#7a2f10', accent:'#2ecc71'},
+  guard:{coat:'#a93226', hat:'#d4a017', skin:'#c68642', type:'sombrero'},
+  decor:'cactus2'},
+ {name:'FRANCE', ground:'#b9c29a', market:'#a3b08a', stall:'#5f6e4a', awnA:'#f0f0e8', awnB:'#27408b',
+  trackBed:'#8f9a72', tie:'#55603f', rail:'#333d28', path:'#d6cfa8', grass:'#9ab06e', grass2:'#6f8a4a', base:'#c2c29a',
+  train:{body:'#4a6274', loco:'#2f3e4a', accent:'#e8d9b5'},
+  guard:{coat:'#27408b', hat:'#a93226', skin:'#e8c39e', type:'kepi'},
+  decor:'lavande'},
+ {name:'JAPON', ground:'#d9b8b0', market:'#c49a92', stall:'#8a4a42', awnA:'#f7e7e4', awnB:'#a93226',
+  trackBed:'#b08a80', tie:'#6e4a44', rail:'#3e2420', path:'#e8cfc8', grass:'#c492a2', grass2:'#a06a80', base:'#d2b0a6',
+  train:{body:'#a93226', loco:'#6e1f1a', accent:'#f1c40f'},
+  guard:{coat:'#444444', hat:'#c9a227', skin:'#e8c39e', type:'kasa'},
+  decor:'cerisier'},
+ {name:'ÉGYPTE', ground:'#e6cf8f', market:'#d4b96e', stall:'#a3833a', awnA:'#f7eecb', awnB:'#1f8a5f',
+  trackBed:'#c7ab62', tie:'#8a6d2f', rail:'#5a4620', path:'#f0dfa8', grass:'#d2bb78', grass2:'#a8903f', base:'#dcc27e',
+  train:{body:'#b7950b', loco:'#7d6608', accent:'#1f8a5f'},
+  guard:{coat:'#eee8d5', hat:'#c0392b', skin:'#b5774a', type:'turban'},
+  decor:'pyramide'},
+ {name:'GRAND NORD', ground:'#dfe6ea', market:'#c4d2da', stall:'#6e8294', awnA:'#ffffff', awnB:'#a93226',
+  trackBed:'#b9c6ce', tie:'#5d6d78', rail:'#2c3e50', path:'#cfdae0', grass:'#bcc8d0', grass2:'#8fa5b2', base:'#d4dee4',
+  train:{body:'#2c3e50', loco:'#1a252f', accent:'#e74c3c'},
+  guard:{coat:'#a93226', hat:'#6e4a22', skin:'#e8c39e', type:'mountie'},
+  decor:'sapin'}
+];
+let transT = 0, transFrom = null, transSwapped = false;
+function themeIndex(){ return (level-1) % THEMES.length; }
+function theme(){
+  return THEMES[(state==='trans' && !transSwapped && transFrom!==null) ? transFrom : themeIndex()];
+}
 const BUSH = {x:430, y:laneY(9)+28};
 const SHACK = {x:245, y:712};
 const MAX_UPG = 3;
@@ -434,6 +474,7 @@ function loop(ts){
   const dt = Math.min(0.05, (ts-last)/1000 || 0.016);
   last = ts;
   if(state==='play') update(dt);
+  else if(state==='trans') updateTrans(dt);
   draw(dt);
   requestAnimationFrame(loop);
 }
@@ -466,10 +507,15 @@ function update(dt){
       banked += pocket;
       floats.push({x:dave.x, y:dave.y-24, t:2, txt:pocket+' $ à l’abri !'});
       pocket = 0;
+      transFrom = themeIndex();   // pays actuel, avant le changement
       level++;
       syncSoldiers();
       bankFlash = 1;
       snd.bank();
+      /* départ vers un nouveau pays ! */
+      transT = 2.4; transSwapped = false;
+      state = 'trans';
+      snd.whistle();
       if(banked > save.bestBank){ save.bestBank = banked; writeSave(); }
       if(level > save.bestLevel){ save.bestLevel = level; writeSave(); }
     }
@@ -557,6 +603,21 @@ function update(dt){
   floats = floats.filter(f=>f.t>0);
 }
 
+function updateTrans(dt){
+  transT -= dt;
+  const p = 1 - transT/2.4;
+  if(p >= 0.5 && !transSwapped){
+    transSwapped = true;
+    /* nouveau pays : voies libres, gardes replacés, Dave à la base */
+    for(const t of lanesData){ t.train = null; t.warn = 0; t.timer = 2 + Math.random()*3; }
+    for(const s of soldiers){ s.x = Math.random()*W; }
+    dave.x = W/2; dave.y = BASE_TOP+80;
+  }
+  if(transT <= 0){ state = 'play'; dave.invuln = Math.max(dave.invuln, 1); }
+  for(const f of floats){ f.y -= 22*dt; f.t -= dt; }
+  floats = floats.filter(f => f.t > 0);
+}
+
 function hitDave(){
   snd.hit();
   lives--;
@@ -606,7 +667,7 @@ function draw(dt){
   ctx.clearRect(0,0,W,H);
 
   /* fond terre */
-  ctx.fillStyle = '#cdb384'; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle = theme().ground; ctx.fillRect(0,0,W,H);
   // texture légère
   ctx.fillStyle = 'rgba(138,109,69,.12)';
   for(let i=0;i<30;i++){ const x=(i*97)%W, y=(i*211)%H; ctx.fillRect(x,y,26,5); }
@@ -618,6 +679,7 @@ function draw(dt){
     else drawGrass(laneY(i));
   }
   drawBase();
+  drawDecor();
   drawTree();
   drawBushVan();
 
@@ -662,49 +724,115 @@ function draw(dt){
   const g = ctx.createRadialGradient(W/2,H/2,H*0.35,W/2,H/2,H*0.75);
   g.addColorStop(0,'rgba(0,0,0,0)'); g.addColorStop(1,'rgba(62,47,28,.35)');
   ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+
+  /* rideau de transition entre les pays */
+  if(state==='trans'){
+    const p = Math.min(1, Math.max(0, 1 - transT/2.4));
+    let cover;
+    if(p < 0.3) cover = p/0.3;
+    else if(p > 0.7) cover = (1-p)/0.3;
+    else cover = 1;
+    const cw = cover * (W/2 + 10);
+    ctx.fillStyle = '#2a2015';
+    ctx.fillRect(0,0,cw,H); ctx.fillRect(W-cw,0,cw,H);
+    if(cover > 0.95){
+      const th = THEMES[themeIndex()];
+      ctx.textAlign='center';
+      ctx.fillStyle='#e8d9b5'; ctx.font='bold 28px Georgia';
+      ctx.fillText('NIVEAU '+level, W/2, H/2-46);
+      ctx.fillStyle='#ffd24a'; ctx.font='bold 36px Georgia';
+      ctx.fillText(th.name, W/2, H/2+6);
+      ctx.fillStyle='#e8d9b5'; ctx.font='16px Georgia';
+      ctx.fillText('En route, Dave !', W/2, H/2+44);
+      ctx.save(); ctx.translate(W/2 - 18, H/2 + 86);
+      drawDecorItem(th.decor, 0, 0);
+      ctx.restore();
+      drawDaveSprite(ctx, W/2 + 26, H/2 + 80, 1.6, 1, true, performance.now()/100);
+    }
+  }
 }
 
 function drawMarket(){
-  ctx.fillStyle = '#b89a6b'; ctx.fillRect(0,0,W,MARKET_BOT);
+  const th = theme();
+  ctx.fillStyle = th.market; ctx.fillRect(0,0,W,MARKET_BOT);
   // étals
   for(let i=0;i<4;i++){
     const x = 18 + i*120;
-    ctx.fillStyle = '#6b4a2a'; ctx.fillRect(x, 34, 92, 48);
+    ctx.fillStyle = th.stall; ctx.fillRect(x, 34, 92, 48);
     // auvent rayé
     for(let s=0;s<6;s++){
-      ctx.fillStyle = s%2 ? '#e8d9b5' : '#a0522d';
+      ctx.fillStyle = s%2 ? th.awnA : th.awnB;
       ctx.fillRect(x-4+s*17, 22, 17, 16);
     }
-    ctx.fillStyle = '#e8d9b5';
-    ctx.font='11px Georgia'; ctx.textAlign='center';
   }
   ctx.fillStyle = '#3e2f1c'; ctx.font='bold 13px Georgia'; ctx.textAlign='center';
-  ctx.fillText('MARCHÉ', W/2, 93);
+  ctx.fillText('MARCHÉ · '+th.name, W/2, 93);
 }
 
 function drawTrack(y){
-  ctx.fillStyle = '#9a7b4f'; ctx.fillRect(0,y,W,LANE_H);
+  const th = theme();
+  ctx.fillStyle = th.trackBed; ctx.fillRect(0,y,W,LANE_H);
   // traverses
-  ctx.fillStyle = '#5a4030';
+  ctx.fillStyle = th.tie;
   for(let x=4;x<W;x+=28) ctx.fillRect(x, y+10, 16, LANE_H-20);
   // rails
-  ctx.fillStyle = '#3e2f1c';
+  ctx.fillStyle = th.rail;
   ctx.fillRect(0, y+13, W, 5);
   ctx.fillRect(0, y+LANE_H-18, W, 5);
 }
 function drawPath(y){
-  ctx.fillStyle = '#d8c49a'; ctx.fillRect(0,y,W,LANE_H);
-  ctx.fillStyle = 'rgba(138,109,69,.25)';
+  ctx.fillStyle = theme().path; ctx.fillRect(0,y,W,LANE_H);
+  ctx.fillStyle = 'rgba(80,65,45,.22)';
   for(let x=10;x<W;x+=60) ctx.fillRect(x, y+LANE_H/2-2, 30, 4);
 }
 function drawGrass(y){
-  ctx.fillStyle = '#b3a86a'; ctx.fillRect(0,y,W,LANE_H);
-  ctx.fillStyle = '#8f8549';
+  const th = theme();
+  ctx.fillStyle = th.grass; ctx.fillRect(0,y,W,LANE_H);
+  ctx.fillStyle = th.grass2;
   for(let x=8;x<W;x+=34){ ctx.fillRect(x, y+14, 2,8); ctx.fillRect(x+5, y+30, 2,8); }
 }
 
+/* décorations propres à chaque pays */
+const DECOR_SPOTS = [{x:100,y:laneY(9)+26},{x:185,y:laneY(9)+34},{x:420,y:745},{x:36,y:770},{x:150,y:778}];
+function drawDecor(){
+  const d = theme().decor;
+  for(const p of DECOR_SPOTS) drawDecorItem(d, p.x, p.y);
+}
+function drawDecorItem(d,x,y){
+  ctx.save(); ctx.translate(x,y);
+  if(d==='cactus' || d==='cactus2'){
+    ctx.fillStyle = d==='cactus' ? '#6e7a3a' : '#3e8a4e';
+    ctx.fillRect(-3,-22,6,24);
+    ctx.fillRect(-11,-14,6,4); ctx.fillRect(-11,-14,4,10);
+    ctx.fillRect(5,-18,6,4); ctx.fillRect(7,-18,4,9);
+  } else if(d==='lavande'){
+    ctx.strokeStyle='#5f7a3f'; ctx.lineWidth=2;
+    for(let i=-1;i<=1;i++){ ctx.beginPath(); ctx.moveTo(i*5,2); ctx.lineTo(i*6,-12); ctx.stroke(); }
+    ctx.fillStyle='#8e6bb5';
+    for(let i=-1;i<=1;i++){ ctx.beginPath(); ctx.ellipse(i*6,-15,3,6,0,0,7); ctx.fill(); }
+  } else if(d==='cerisier'){
+    ctx.fillStyle='#6e4a44'; ctx.fillRect(-2,-16,5,18);
+    ctx.fillStyle='#e8a0b4'; ctx.beginPath(); ctx.arc(0,-22,11,0,7); ctx.fill();
+    ctx.fillStyle='#f0bcc8';
+    ctx.beginPath(); ctx.arc(-8,-17,6,0,7); ctx.fill();
+    ctx.beginPath(); ctx.arc(8,-18,6,0,7); ctx.fill();
+  } else if(d==='pyramide'){
+    ctx.fillStyle='#cfae5e';
+    ctx.beginPath(); ctx.moveTo(-16,2); ctx.lineTo(0,-22); ctx.lineTo(16,2); ctx.closePath(); ctx.fill();
+    ctx.fillStyle='#b08f42';
+    ctx.beginPath(); ctx.moveTo(0,-22); ctx.lineTo(6,2); ctx.lineTo(16,2); ctx.closePath(); ctx.fill();
+  } else if(d==='sapin'){
+    ctx.fillStyle='#6e4a22'; ctx.fillRect(-2,-2,4,6);
+    ctx.fillStyle='#2f5d3f';
+    ctx.beginPath(); ctx.moveTo(-11,-2); ctx.lineTo(0,-26); ctx.lineTo(11,-2); ctx.closePath(); ctx.fill();
+    ctx.fillStyle='#fff';
+    ctx.beginPath(); ctx.moveTo(-6,-12); ctx.lineTo(0,-24); ctx.lineTo(6,-12); ctx.closePath(); ctx.fill();
+  }
+  ctx.restore();
+}
+
 function drawBase(){
-  ctx.fillStyle = '#c4a877'; ctx.fillRect(0,BASE_TOP,W,H-BASE_TOP);
+  ctx.fillStyle = theme().base; ctx.fillRect(0,BASE_TOP,W,H-BASE_TOP);
   if(bankFlash>0){
     ctx.fillStyle = `rgba(255,210,74,${bankFlash*.3})`;
     ctx.fillRect(0,BASE_TOP,W,H-BASE_TOP);
@@ -770,15 +898,19 @@ function drawBushVan(){
 }
 
 function drawTrain(tr, y){
+  const tt = theme().train;
   const x0 = tr.dir>0 ? tr.x : tr.x - tr.len;
   const cy = y + LANE_H/2;
   // wagons
   const nCars = Math.round(tr.len/70);
   for(let i=0;i<nCars;i++){
     const cx = x0 + i*70;
-    ctx.fillStyle = i===( tr.dir>0 ? nCars-1 : 0) ? '#4e3620' : '#6b4a2a';
+    ctx.fillStyle = tt.body;
     ctx.fillRect(cx+3, cy-18, 64, 36);
-    ctx.strokeStyle='#3e2f1c'; ctx.lineWidth=2; ctx.strokeRect(cx+3, cy-18, 64, 36);
+    ctx.strokeStyle = tt.loco; ctx.lineWidth=2; ctx.strokeRect(cx+3, cy-18, 64, 36);
+    // bande décorative aux couleurs du pays
+    ctx.fillStyle = tt.accent;
+    ctx.fillRect(cx+3, cy-4, 64, 4);
     // roues
     ctx.fillStyle='#2a2015';
     ctx.beginPath(); ctx.arc(cx+18, cy+18, 6,0,7); ctx.fill();
@@ -786,7 +918,7 @@ function drawTrain(tr, y){
   }
   // locomotive = wagon de tête
   const hx = tr.dir>0 ? x0+tr.len-70 : x0;
-  ctx.fillStyle = '#3e2f1c';
+  ctx.fillStyle = tt.loco;
   ctx.fillRect(hx+3, cy-24, 64, 42);
   // cheminée
   const chx = tr.dir>0 ? hx+54 : hx+10;
@@ -796,24 +928,39 @@ function drawTrain(tr, y){
   ctx.beginPath(); ctx.arc(chx+5 - tr.dir*12, cy-42, 7,0,7); ctx.fill();
   ctx.beginPath(); ctx.arc(chx+5 - tr.dir*26, cy-48, 9,0,7); ctx.fill();
   // phare
-  ctx.fillStyle='#ffd24a';
+  ctx.fillStyle = tt.accent;
   ctx.fillRect(tr.dir>0 ? hx+62 : hx+2, cy-8, 5, 10);
 }
 
 function drawSoldier(s){
+  const g = theme().guard;
   const y = laneY(s.lane)+LANE_H/2;
   const step = Math.sin(performance.now()/120 + s.x)*3;
   ctx.save(); ctx.translate(s.x, y);
   // jambes
-  ctx.strokeStyle='#3e3a55'; ctx.lineWidth=4;
+  ctx.strokeStyle = g.hat; ctx.lineWidth=4;
   ctx.beginPath(); ctx.moveTo(-3,6); ctx.lineTo(-4-step*.5,16); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(3,6); ctx.lineTo(4+step*.5,16); ctx.stroke();
   // corps
-  ctx.fillStyle='#4a4668'; ctx.fillRect(-7,-8,14,16);
+  ctx.fillStyle = g.coat; ctx.fillRect(-7,-8,14,16);
   // tête
-  ctx.fillStyle='#d9a97b'; ctx.beginPath(); ctx.arc(0,-14,6,0,7); ctx.fill();
-  // képi
-  ctx.fillStyle='#3e3a55'; ctx.fillRect(-7,-21,14,5); ctx.fillRect(-7+(s.dir>0?6:-2),-18,8,3);
+  ctx.fillStyle = g.skin; ctx.beginPath(); ctx.arc(0,-14,6,0,7); ctx.fill();
+  // couvre-chef selon le pays
+  ctx.fillStyle = g.hat;
+  if(g.type==='kepi'){
+    ctx.fillRect(-7,-21,14,5); ctx.fillRect(-7+(s.dir>0?6:-2),-18,8,3);
+  } else if(g.type==='sombrero'){
+    ctx.beginPath(); ctx.ellipse(0,-18,13,4,0,0,7); ctx.fill();
+    ctx.beginPath(); ctx.arc(0,-20,5,Math.PI,0); ctx.fill();
+  } else if(g.type==='kasa'){
+    ctx.beginPath(); ctx.moveTo(-11,-17); ctx.lineTo(0,-26); ctx.lineTo(11,-17); ctx.closePath(); ctx.fill();
+  } else if(g.type==='turban'){
+    ctx.beginPath(); ctx.arc(0,-19,6.5,Math.PI,0); ctx.fill();
+    ctx.fillRect(-6.5,-19,13,3);
+  } else if(g.type==='mountie'){
+    ctx.beginPath(); ctx.ellipse(0,-19,11,3,0,0,7); ctx.fill();
+    ctx.beginPath(); ctx.arc(0,-21,5,Math.PI,0); ctx.fill();
+  }
   // fusil sur l'épaule
   ctx.strokeStyle='#5a4030'; ctx.lineWidth=3;
   ctx.beginPath(); ctx.moveTo(s.dir*6,-4); ctx.lineTo(s.dir*10,-24); ctx.stroke();
@@ -1038,7 +1185,10 @@ window.FS = {
   get state(){return state;}, get banked(){return banked;}, get pocket(){return pocket;},
   get level(){return level;}, get lives(){return lives;}, get secret(){return secret;},
   get dave(){return dave;}, get vanOpen(){return vanOpen;},
+  get region(){return THEMES[themeIndex()].name;},
   _debug: {
+    setLevel(n){ level=n; syncSoldiers(); },
+    endTrans(){ if(state==='trans'){ transT=0.01; } },
     setDave(x,y){ dave.x=x; dave.y=y; },
     setLives(n){ lives=n; },
     forceHit(){ hitDave(); },
