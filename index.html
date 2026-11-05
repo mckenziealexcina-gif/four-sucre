@@ -295,7 +295,106 @@ const snd = {
   success(){ [523,659,784,1047,1319].forEach((f,i)=>beep(f,.16,'triangle',.14,i*.09)); },
   whistle(){ beep(520,.45,'triangle',.12); beep(520,.45,'triangle',.1,.5); beep(390,.7,'triangle',.12,1.0); },
   bad(){ beep(200,.25,'square',.12); beep(150,.3,'square',.1,.1); },
-  pick(){ beep(600,.07,'sine',.1); }
+  pick(){ beep(600,.07,'sine',.1); },
+  sad(){ [392,330,262,196].forEach((f,i)=>beep(f,.3,'triangle',.13,i*.28)); }
+};
+
+/* ---------- musique de fond générative ---------- */
+function tone(freq, t, dur, type, vol){
+  if(!AC || save.muted || vol<=0.001) return;
+  try{
+    const o = AC.createOscillator(), g = AC.createGain();
+    o.type = type; o.frequency.value = freq;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(vol, t+0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
+    o.connect(g); g.connect(AC.destination);
+    o.start(t); o.stop(t+dur+0.05);
+  }catch(e){}
+}
+let noiseBuf = null;
+function perc(t, dur, vol, hp){
+  if(!AC || save.muted) return;
+  try{
+    if(!noiseBuf){
+      noiseBuf = AC.createBuffer(1, AC.sampleRate*0.25, AC.sampleRate);
+      const d = noiseBuf.getChannelData(0);
+      for(let i=0;i<d.length;i++) d[i] = Math.random()*2-1;
+    }
+    const src = AC.createBufferSource(); src.buffer = noiseBuf;
+    const f = AC.createBiquadFilter(); f.type='highpass'; f.frequency.value = hp;
+    const g = AC.createGain();
+    g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
+    src.connect(f); f.connect(g); g.connect(AC.destination);
+    src.start(t); src.stop(t+dur+0.03);
+  }catch(e){}
+}
+const music = {
+  step: 0, nextTime: 0, timer: null, bar: 0,
+  /* une gamme et une note de départ par pays : chaque région a sa couleur musicale */
+  scales: [
+    [0,2,4,7,9,12,14,16],    // Far West : pentatonique majeure
+    [0,4,5,7,9,12,16,17],    // Mexique : majeur éclatant
+    [0,2,3,5,7,8,12,14],     // France : mineur musette
+    [0,2,3,7,8,12,14,15],    // Japon : hirajoshi
+    [0,1,4,5,7,8,11,12],     // Égypte : double harmonique
+    [0,2,3,5,7,10,12,14]     // Grand Nord : mineur naturel
+  ],
+  roots: [262, 294, 220, 247, 220, 196],
+  melA: [0,2,4,5, 4,2,0,2, 4,4,5,4, 2,0,1,null],
+  melB: [7,5,4,2, 4,5,7,null, 5,4,2,0, 1,2,0,null],
+  bpm(){
+    let b = 96 + Math.min(64, (level-1)*5);
+    if(state==='play' && dave && dave.power>0) b *= 1.22;
+    if(state==='shop' || state==='keypad') b *= 0.8;
+    return b;
+  },
+  start(){
+    if(this.timer) return;
+    this.nextTime = 0;
+    this.timer = setInterval(()=>this.tick(), 90);
+  },
+  tick(){
+    if(save.muted || !AC || AC.state!=='running') return;
+    if(state!=='play' && state!=='trans' && state!=='shop' && state!=='keypad') return;
+    const now = AC.currentTime;
+    if(this.nextTime < now) this.nextTime = now + 0.06;
+    const spb = 60/this.bpm()/2;   // croches
+    while(this.nextTime < now + 0.28){
+      this.note(this.step, this.nextTime, spb);
+      this.nextTime += spb;
+      this.step++;
+      if(this.step>=16){ this.step=0; this.bar++; }
+    }
+  },
+  note(i, t, spb){
+    const ti = themeIndex();
+    const sc = this.scales[ti], root = this.roots[ti];
+    const calm = (state==='shop' || state==='keypad');
+    const danger = state==='play' && dave && dave.y < BASE_TOP && dave.y > MARKET_BOT;
+    const power = state==='play' && dave && dave.power>0;
+    const mul = calm ? 0.45 : (danger ? 1.15 : 1);
+    const deg = d => root * Math.pow(2, sc[d%sc.length]/12) * (d>=sc.length?2:1);
+    /* basse */
+    if(i%4===0) tone(deg(0)/2, t, spb*1.6, 'triangle', .085*mul);
+    if(i%4===2) tone(deg(4)/2, t, spb*1.2, 'triangle', .07*mul);
+    if(danger && i%2===1) tone(deg(0)/4, t, spb*.8, 'sawtooth', .05);
+    /* mélodie : alternance couplet A / B */
+    const pat = (this.bar%2===0) ? this.melA : this.melB;
+    const d = pat[i];
+    if(d!==null && d!==undefined){
+      const oct = power ? 2 : 1;
+      tone(deg(d)*oct, t, spb*0.95, 'square', .042*mul);
+      if(power) tone(deg(d)*4, t+spb*0.5, spb*0.4, 'square', .025);
+    }
+    /* percussions */
+    if(!calm){
+      perc(t, .03, i%4===0 ? .05 : .022, 6000);           // charley
+      if(i===4 || i===12) perc(t, .09, .07*mul, 1500);    // caisse claire
+      if(danger && i%2===0) perc(t, .03, .03, 8000);      // double charley en danger
+    }
+  }
 };
 
 /* ---------- game state ---------- */
@@ -635,6 +734,7 @@ function hitDave(){
 
 function gameOver(){
   state = 'over';
+  snd.sad();
   if(banked > save.bestBank) save.bestBank = banked;
   if(level > save.bestLevel) save.bestLevel = level;
   writeSave();
@@ -1080,6 +1180,7 @@ const $ = id => document.getElementById(id);
 
 function startGame(){
   audio();
+  music.start();
   newGame();
   $('startScr').classList.add('hidden');
   $('overScr').classList.add('hidden');
