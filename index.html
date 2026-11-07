@@ -14,7 +14,7 @@
   }
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;
     user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;}
-  button,.btn,.tbtn{touch-action:manipulation;}
+  button,.btn{touch-action:manipulation;}
   html,body{
     width:100%;height:100%;
     overflow:hidden;
@@ -60,100 +60,162 @@
   }
   .sub{font-size:16px;opacity:.9;margin:10px 0 18px;max-width:340px;line-height:1.4;}
   .btn{
-    font-family:inherit;
-    font-size:22px;
-    padding:14px 40px;
-    background:var(--accent);
-    color:#fff;
-    border:3px solid #7a3610;
-    border-radius:10px;
+    position:relative;
+    font-family:inherit;font-weight:bold;
+    font-size:22px;letter-spacing:2px;white-space:nowrap;
+    padding:14px 42px;margin:6px;
+    color:#fff8e6;
+    text-shadow:0 2px 0 rgba(60,25,5,.6);
+    background:linear-gradient(180deg,#e07d42 0%,#b5541e 55%,#8f3b10 100%);
+    border:3px solid #5e2a0a;
+    border-radius:14px;
     cursor:pointer;
-    box-shadow:0 4px 0 #7a3610;
-    margin:6px;
+    box-shadow:inset 0 2px 0 rgba(255,230,190,.45), inset 0 -3px 0 rgba(0,0,0,.25),
+               0 5px 0 #5e2a0a, 0 9px 14px rgba(0,0,0,.35);
+    transition:transform .06s, box-shadow .06s, filter .15s;
   }
-  .btn:active{transform:translateY(3px);box-shadow:0 1px 0 #7a3610;}
-  .btn.small{font-size:16px;padding:8px 18px;}
-  .btn:disabled{opacity:.45;cursor:default;}
-  #daveHero{margin:4px 0;}
-  /* ---------- shop ---------- */
-  #shop .card{
-    background:var(--sepia-paper);
+  .btn:hover{filter:brightness(1.08);}
+  .btn:active{
+    transform:translateY(4px);
+    box-shadow:inset 0 2px 0 rgba(255,230,190,.35), inset 0 -2px 0 rgba(0,0,0,.25),
+               0 1px 0 #5e2a0a, 0 2px 4px rgba(0,0,0,.3);
+  }
+  .btn.big{font-size:27px;padding:16px 56px;animation:btnPulse 1.6s ease-in-out infinite;}
+  .btn.big:active{animation:none;}
+  @keyframes btnPulse{50%{transform:scale(1.06);}}
+  .btn.small{font-size:15px;padding:8px 16px;letter-spacing:1px;border-radius:10px;}
+  .btn.gold{
+    color:#4a3200;text-shadow:0 1px 0 rgba(255,255,255,.55);
+    background:linear-gradient(180deg,#ffe993 0%,#f1c40f 55%,#c99a06 100%);
+    border-color:#7d6608;
+    box-shadow:inset 0 2px 0 rgba(255,255,255,.6), inset 0 -3px 0 rgba(0,0,0,.18),
+               0 4px 0 #7d6608, 0 7px 10px rgba(0,0,0,.3);
+  }
+  .btn.gold:active{box-shadow:inset 0 2px 0 rgba(255,255,255,.5), 0 1px 0 #7d6608;}
+  .btn.ghost{
+    background:linear-gradient(180deg,#9a7b52 0%,#6b5232 100%);
+    border-color:#3e2f1c;
+    box-shadow:inset 0 2px 0 rgba(255,240,210,.3), 0 4px 0 #3e2f1c, 0 7px 10px rgba(0,0,0,.3);
+  }
+  .btn.ghost:active{box-shadow:inset 0 2px 0 rgba(255,240,210,.25), 0 1px 0 #3e2f1c;}
+  .btn:disabled{filter:grayscale(.75) brightness(.9);opacity:.55;cursor:default;transform:none;}
+  #daveHero{margin:4px 0;background:transparent;box-shadow:none;}
+  .tcHint{display:none;}
+  body.touch .kbHint{display:none;}
+  body.touch .tcHint{display:inline;}
+  /* ---------- cartes en bois (boutique, code) ---------- */
+  .woodCard{
+    background:linear-gradient(180deg,#f3e7c9,#e2cfa3);
     color:var(--sepia-dark);
-    border:4px solid var(--sepia-mid);
-    border-radius:12px;
+    border:6px solid #6b4a2a;
+    border-radius:16px;
     padding:14px;
-    width:min(92%,360px);
+    box-shadow:inset 0 0 0 2px #c9a227, 0 12px 30px rgba(0,0,0,.55);
   }
+  #shop .card{width:min(92%,360px);}
   #shop h2{margin-bottom:6px;font-size:24px;}
   .shopRow{
     display:flex;align-items:center;justify-content:space-between;
     gap:8px;
-    background:rgba(138,109,69,.15);
-    border-radius:8px;
-    padding:8px;
-    margin:8px 0;
+    background:rgba(255,250,235,.55);
+    border:2px solid rgba(138,109,69,.35);
+    border-radius:10px;
+    padding:8px 10px;
+    margin:9px 0;
     text-align:left;
   }
   .shopRow .nm{font-weight:bold;font-size:15px;}
   .shopRow .ds{font-size:12px;opacity:.85;}
-  .pips{letter-spacing:2px;font-size:13px;color:var(--accent);}
+  .pips{letter-spacing:3px;font-size:14px;color:#c99a06;text-shadow:0 1px 0 #7d6608;}
   /* ---------- keypad ---------- */
-  #keypad .pad{
-    background:var(--sepia-paper);
-    color:var(--sepia-dark);
-    border:4px solid var(--sepia-mid);
-    border-radius:12px;
-    padding:14px;
-  }
   #kpDisplay{
-    font-size:30px;letter-spacing:10px;
-    background:#fff;border:2px solid var(--sepia-mid);
-    border-radius:8px;min-width:170px;
-    padding:6px 10px;margin-bottom:10px;
-    min-height:48px;
+    font-family:'Courier New',monospace;font-weight:bold;
+    font-size:32px;letter-spacing:12px;
+    color:#ffd24a;text-shadow:0 0 8px rgba(255,210,74,.6);
+    background:#2a2015;
+    border:3px solid #8a6d45;
+    border-radius:10px;min-width:190px;
+    padding:6px 10px 6px 22px;margin-bottom:12px;
+    min-height:52px;
+    box-shadow:inset 0 3px 8px rgba(0,0,0,.6);
   }
-  #kpDisplay.bad{background:#f3b8a6;}
-  .kpGrid{display:grid;grid-template-columns:repeat(3,64px);gap:8px;justify-content:center;}
+  #kpDisplay.bad{background:#7a1f12;color:#fff;}
+  .kpGrid{display:grid;grid-template-columns:repeat(3,66px);gap:9px;justify-content:center;}
   .kpGrid button{
-    font-family:inherit;font-size:24px;
-    padding:10px 0;border-radius:8px;
-    border:2px solid var(--sepia-mid);
-    background:#fff;cursor:pointer;
+    font-family:inherit;font-weight:bold;font-size:26px;
+    height:56px;border-radius:12px;
+    color:#3e2f1c;
+    background:linear-gradient(180deg,#fffaf0,#e8d9b5);
+    border:2px solid #8a6d45;
+    box-shadow:inset 0 -3px 0 rgba(138,109,69,.35), 0 4px 0 #8a6d45, 0 6px 8px rgba(0,0,0,.2);
+    cursor:pointer;
+    transition:transform .05s, box-shadow .05s;
   }
-  .kpGrid button:active{background:var(--sepia-light);}
-  /* ---------- touch controls ---------- */
+  .kpGrid button:active{transform:translateY(3px);box-shadow:inset 0 -1px 0 rgba(138,109,69,.35), 0 1px 0 #8a6d45;}
+  .kpGrid #kpOk{color:#fff;text-shadow:0 1px 0 rgba(0,0,0,.4);background:linear-gradient(180deg,#86d08a,#3e8a4e);border-color:#2b5f36;box-shadow:inset 0 -3px 0 rgba(0,0,0,.2), 0 4px 0 #2b5f36;}
+  .kpGrid #kpClear{color:#fff;text-shadow:0 1px 0 rgba(0,0,0,.4);background:linear-gradient(180deg,#f0a08a,#c0392b);border-color:#7d2318;box-shadow:inset 0 -3px 0 rgba(0,0,0,.2), 0 4px 0 #7d2318;}
+  /* ---------- contrôles tactiles ---------- */
   #touchUI{position:absolute;inset:0;z-index:10;pointer-events:none;display:none;}
   body.touch #touchUI{display:block;}
-  .tbtn{
-    position:absolute;
-    pointer-events:auto;
-    background:rgba(62,47,28,.45);
-    border:2px solid rgba(232,217,181,.6);
-    border-radius:12px;
-    color:var(--sepia-paper);
-    font-size:22px;
-    display:flex;align-items:center;justify-content:center;
-    user-select:none;-webkit-user-select:none;
+  #dpad{
+    position:absolute;left:10px;bottom:12px;
+    width:150px;height:150px;border-radius:50%;
+    pointer-events:auto;touch-action:none;
+    background:radial-gradient(circle at 50% 38%, rgba(120,88,55,.62), rgba(45,32,18,.72) 72%);
+    border:3px solid rgba(201,162,39,.85);
+    box-shadow:inset 0 0 0 7px rgba(232,217,181,.12), inset 0 4px 10px rgba(0,0,0,.35), 0 5px 14px rgba(0,0,0,.4);
   }
-  .tbtn:active{background:rgba(181,84,30,.6);}
-  #bUp   {left:62px; bottom:118px;width:52px;height:52px;}
-  #bDown {left:62px; bottom:10px; width:52px;height:52px;}
-  #bLeft {left:6px;  bottom:64px; width:52px;height:52px;}
-  #bRight{left:118px;bottom:64px; width:52px;height:52px;}
+  #dpad .arr{
+    position:absolute;font-size:19px;line-height:1;
+    color:rgba(232,217,181,.8);
+    transition:color .08s, text-shadow .08s;
+    pointer-events:none;
+  }
+  #dpad .arr.on{color:#ffd24a;text-shadow:0 0 10px #ffd24a;}
+  #dpad .u{left:50%;top:10px;transform:translateX(-50%);}
+  #dpad .d{left:50%;bottom:10px;transform:translateX(-50%);}
+  #dpad .l{top:50%;left:11px;transform:translateY(-50%);}
+  #dpad .r{top:50%;right:11px;transform:translateY(-50%);}
+  #dpKnob{
+    position:absolute;left:50%;top:50%;
+    width:58px;height:58px;margin:-29px 0 0 -29px;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #fff3b0, #e0b23a 45%, #9a7410 100%);
+    border:2px solid #6e5208;
+    box-shadow:0 5px 9px rgba(0,0,0,.45), inset 0 -3px 0 rgba(0,0,0,.2), inset 0 2px 0 rgba(255,255,255,.5);
+    pointer-events:none;
+    transition:transform .06s;
+  }
   #bAct{
-    right:12px;bottom:34px;
-    width:76px;height:76px;border-radius:50%;
-    font-size:15px;font-weight:bold;
-    background:rgba(181,84,30,.55);
+    position:absolute;right:14px;bottom:30px;
+    width:98px;height:98px;border-radius:50%;
+    pointer-events:auto;touch-action:none;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    color:#fff8e6;font-weight:bold;font-size:13px;letter-spacing:1px;
+    text-shadow:0 2px 0 rgba(60,20,0,.6);
+    background:radial-gradient(circle at 40% 30%, #f29a62, #c0531d 55%, #8a3510 100%);
+    border:4px solid #c9a227;
+    box-shadow:0 0 0 3px rgba(62,47,28,.6), 0 6px 0 #6e3a0c, 0 11px 16px rgba(0,0,0,.4),
+               inset 0 3px 0 rgba(255,220,180,.45);
+    transition:transform .05s;
   }
-  /* mute */
+  #bAct .ic{font-size:30px;line-height:1;margin-bottom:3px;min-height:30px;}
+  #bAct.pressed{transform:translateY(5px);}
+  #bAct.ready{animation:actGlow 1s ease-in-out infinite;}
+  @keyframes actGlow{
+    0%,100%{box-shadow:0 0 0 3px rgba(62,47,28,.6), 0 6px 0 #6e3a0c, 0 11px 16px rgba(0,0,0,.4), inset 0 3px 0 rgba(255,220,180,.45), 0 0 0 0 rgba(255,210,74,0);}
+    50%{box-shadow:0 0 0 3px rgba(62,47,28,.6), 0 6px 0 #6e3a0c, 0 11px 16px rgba(0,0,0,.4), inset 0 3px 0 rgba(255,220,180,.45), 0 0 24px 8px rgba(255,210,74,.85);}
+  }
+  /* bouton son */
   #muteBtn{
-    position:absolute;top:6px;right:6px;z-index:15;
-    width:40px;height:40px;border-radius:8px;
-    border:2px solid rgba(232,217,181,.5);
-    background:rgba(62,47,28,.5);
-    color:var(--sepia-paper);font-size:20px;cursor:pointer;
+    position:absolute;top:26px;right:8px;z-index:15;
+    width:42px;height:42px;border-radius:50%;
+    border:3px solid #c9a227;
+    background:radial-gradient(circle at 40% 30%, #9a7b52, #4e3620 80%);
+    box-shadow:0 3px 0 #3e2f1c, 0 5px 8px rgba(0,0,0,.35);
+    color:#fff8e6;font-size:19px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
   }
+  #muteBtn:active{transform:translateY(2px);box-shadow:0 1px 0 #3e2f1c;}
 </style>
 </head>
 <body>
@@ -163,43 +225,44 @@
     <button id="muteBtn" aria-label="Son">&#128266;</button>
 
     <div id="touchUI">
-      <div class="tbtn" id="bUp">&#9650;</div>
-      <div class="tbtn" id="bDown">&#9660;</div>
-      <div class="tbtn" id="bLeft">&#9664;</div>
-      <div class="tbtn" id="bRight">&#9654;</div>
-      <div class="tbtn" id="bAct">ACTION</div>
+      <div id="dpad">
+        <span class="arr u">&#9650;</span><span class="arr d">&#9660;</span>
+        <span class="arr l">&#9664;</span><span class="arr r">&#9654;</span>
+        <div id="dpKnob"></div>
+      </div>
+      <div id="bAct"><span class="ic"></span><span class="tx">ACTION</span></div>
     </div>
 
     <div id="startScr" class="overlay">
       <h1>FOUR SUCRE</h1>
       <canvas id="daveHero" width="140" height="120"></canvas>
       <div class="sub">Dave le livreur de sucre ! Monte vendre ton sucre au march&eacute;, &eacute;vite les trains et les soldats, et rapporte l'argent &agrave; la base.</div>
-      <button class="btn" id="playBtn">JOUER</button>
-      <div class="sub" style="font-size:13px;">Fl&egrave;ches / WASD : bouger &bull; Espace : action</div>
+      <button class="btn big" id="playBtn">JOUER</button>
+      <div class="sub" style="font-size:13px;"><span class="kbHint">Fl&egrave;ches / WASD : bouger &bull; Espace : action</span><span class="tcHint">Manette : bouger &bull; Bouton rouge : action</span></div>
     </div>
 
     <div id="shop" class="overlay hidden">
-      <div class="card">
+      <div class="card woodCard">
         <h2>&#127978; Boutique</h2>
         <div style="font-size:15px;margin-bottom:4px;">Argent &agrave; la banque : <b id="shopMoney">0</b> $</div>
         <div class="shopRow">
           <div><div class="nm">Gros sac de sucre</div><div class="ds">+8 $ par voyage, marche un peu plus lentement</div><div class="pips" id="pipBag"></div></div>
-          <button class="btn small" id="buyBag">30 $</button>
+          <button class="btn small gold" id="buyBag">30 $</button>
         </div>
         <div class="shopRow">
           <div><div class="nm">Vie en plus</div><div class="ds">Un c&oelig;ur de plus pour Dave</div><div class="pips" id="pipLife"></div></div>
-          <button class="btn small" id="buyLife">50 $</button>
+          <button class="btn small gold" id="buyLife">50 $</button>
         </div>
         <div class="shopRow">
           <div><div class="nm">Boisson plus longue</div><div class="ds">+2 secondes de super pouvoir</div><div class="pips" id="pipDrink"></div></div>
-          <button class="btn small" id="buyDrink">25 $</button>
+          <button class="btn small gold" id="buyDrink">25 $</button>
         </div>
-        <button class="btn" id="closeShop" style="font-size:18px;">Fermer</button>
+        <button class="btn ghost" id="closeShop" style="font-size:18px;">Fermer</button>
       </div>
     </div>
 
     <div id="keypad" class="overlay hidden">
-      <div class="pad">
+      <div class="pad woodCard">
         <h2 style="margin-bottom:8px;">&#128274; Code secret</h2>
         <div id="kpDisplay">&nbsp;</div>
         <div class="kpGrid">
@@ -208,7 +271,7 @@
           <button>7</button><button>8</button><button>9</button>
           <button id="kpClear">&#10006;</button><button>0</button><button id="kpOk">OK</button>
         </div>
-        <button class="btn small" id="kpClose" style="margin-top:10px;">Fermer</button>
+        <button class="btn small ghost" id="kpClose" style="margin-top:10px;">Fermer</button>
       </div>
     </div>
 
@@ -220,7 +283,7 @@
         &#127942; Record d'argent : <b id="ovBest">0</b> $<br>
         &#127942; Meilleur niveau : <b id="ovBestLvl">1</b>
       </div>
-      <button class="btn" id="replayBtn">REJOUER</button>
+      <button class="btn big" id="replayBtn">REJOUER</button>
     </div>
   </div>
 </div>
@@ -521,38 +584,91 @@ function axis(){
 
 /* touch */
 const touch = {up:false,down:false,left:false,right:false};
-function bindHold(id, prop){
-  const el = document.getElementById(id);
-  el.addEventListener('pointerdown', e=>{
-    e.preventDefault();
-    try{ el.setPointerCapture(e.pointerId); }catch(err){}
-    touch[prop]=true;
-  });
-  const off = e=>{e.preventDefault(); touch[prop]=false;};
-  el.addEventListener('pointerup', off);
-  el.addEventListener('pointercancel', off);
-  el.addEventListener('lostpointercapture', off);
+/* D-pad glissant : 8 directions, on peut glisser sans lever le doigt */
+const dpadEl = document.getElementById('dpad');
+const knobEl = document.getElementById('dpKnob');
+const dpArr = {
+  up: dpadEl.querySelector('.u'), down: dpadEl.querySelector('.d'),
+  left: dpadEl.querySelector('.l'), right: dpadEl.querySelector('.r')
+};
+let dpId = null;
+function dpApply(){
+  for(const k in dpArr) dpArr[k].classList.toggle('on', touch[k]);
 }
-bindHold('bUp','up'); bindHold('bDown','down');
-bindHold('bLeft','left'); bindHold('bRight','right');
+function dpReset(){
+  dpId = null;
+  touch.up = touch.down = touch.left = touch.right = false;
+  knobEl.style.transform = '';
+  dpApply();
+}
+function dpSet(e){
+  const r = dpadEl.getBoundingClientRect();
+  const R = r.width/2;
+  const dx = e.clientX - (r.left + R), dy = e.clientY - (r.top + R);
+  const dist = Math.hypot(dx, dy);
+  touch.up = touch.down = touch.left = touch.right = false;
+  if(dist > R*0.2){
+    const oct = Math.round(Math.atan2(dy, dx) / (Math.PI/4));
+    const sx = Math.round(Math.cos(oct*Math.PI/4)), sy = Math.round(Math.sin(oct*Math.PI/4));
+    if(sx>0) touch.right = true; if(sx<0) touch.left = true;
+    if(sy>0) touch.down = true;  if(sy<0) touch.up = true;
+    const k = Math.min(dist, R*0.48);
+    knobEl.style.transform = 'translate('+(dx/dist*k)+'px,'+(dy/dist*k)+'px)';
+  } else {
+    knobEl.style.transform = '';
+  }
+  dpApply();
+}
+dpadEl.addEventListener('pointerdown', e=>{
+  e.preventDefault();
+  try{ dpadEl.setPointerCapture(e.pointerId); }catch(err){}
+  dpId = e.pointerId; audio(); dpSet(e);
+});
+dpadEl.addEventListener('pointermove', e=>{ if(e.pointerId===dpId){ e.preventDefault(); dpSet(e); } });
+dpadEl.addEventListener('pointerup', e=>{ if(e.pointerId===dpId) dpReset(); });
+dpadEl.addEventListener('pointercancel', dpReset);
+dpadEl.addEventListener('lostpointercapture', dpReset);
+
+/* bouton ACTION : affiche ce qu'il va faire */
 const bActEl = document.getElementById('bAct');
+const bActIc = bActEl.querySelector('.ic'), bActTx = bActEl.querySelector('.tx');
 let lastActTap = 0;
 function actTap(e){
   e.preventDefault();
   const n = Date.now();
   if(n - lastActTap < 120) return;   // anti double déclenchement pointer+click
   lastActTap = n;
+  bActEl.classList.add('pressed');
+  setTimeout(()=>bActEl.classList.remove('pressed'), 120);
   audio(); doAction();
 }
 bActEl.addEventListener('pointerdown', actTap);
 bActEl.addEventListener('click', actTap);
 bActEl.addEventListener('touchstart', actTap, {passive:false});
-if(('ontouchstart' in window) || matchMedia('(pointer: coarse)').matches){
-  document.body.classList.add('touch');
+let actKey = '';
+function updateActionUI(){
+  const c = actionContext();
+  const key = c ? c.txt : '';
+  if(key === actKey) return;
+  actKey = key;
+  bActIc.textContent = c ? c.ic : '';
+  bActTx.textContent = c ? c.txt : 'ACTION';
+  bActEl.classList.toggle('ready', !!c);
 }
+const isTouch = ('ontouchstart' in window) || matchMedia('(pointer: coarse)').matches;
+if(isTouch) document.body.classList.add('touch');
 
 /* ---------- actions (Espace) ---------- */
 function near(p, r){ return Math.hypot(dave.x-p.x, dave.y-p.y) < r; }
+/* même ordre de priorité que doAction() */
+function actionContext(){
+  if(state!=='play' || !dave) return null;
+  if(near(TREE, 55)) return {ic:'\u{1F333}', txt:'SECOUER'};
+  if(near(BUSH, 55) && !vanOpen) return {ic:'\u{1F512}', txt:'CODE'};
+  if(dave.y > BASE_TOP) return {ic:'\u{1F6D2}', txt:'BOUTIQUE'};
+  if(dave.power > 0) return {ic:'\u26A1', txt:'SAUTER'};
+  return null;
+}
 function doAction(){
   if(state!=='play') return;
   if(near(TREE, 55)){
@@ -582,7 +698,9 @@ function loop(ts){
   last = ts;
   if(state==='play') update(dt);
   else if(state==='trans') updateTrans(dt);
+  if(shakeT > 0) shakeT -= dt;
   draw(dt);
+  if(isTouch) updateActionUI();
   requestAnimationFrame(loop);
 }
 
@@ -813,8 +931,11 @@ function updateTrans(dt){
   floats = floats.filter(f => f.t > 0);
 }
 
+let shakeT = 0;
 function hitDave(){
   snd.hit();
+  shakeT = 0.35;
+  try{ if(navigator.vibrate) navigator.vibrate(140); }catch(e){}
   lives--;
   const lost = pocket;
   pocket = 0;
@@ -861,6 +982,11 @@ function vanBonus(){
 /* ================= DRAW ================= */
 function draw(dt){
   ctx.clearRect(0,0,W,H);
+  ctx.save();
+  if(shakeT > 0){
+    const m = shakeT/0.35*7;
+    ctx.translate((Math.random()-.5)*m*2, (Math.random()-.5)*m*2);
+  }
 
   /* fond terre */
   ctx.fillStyle = theme().ground; ctx.fillRect(0,0,W,H);
@@ -899,6 +1025,7 @@ function draw(dt){
   for(const s of soldiers) drawSoldier(s);
   if(can.active) drawCan();
   drawDave();
+  drawGuide();
 
   /* particles */
   for(const p of particles){
@@ -950,6 +1077,42 @@ function draw(dt){
       drawDaveSprite(ctx, W/2 + 26, H/2 + 80, 1.6, 1, true, performance.now()/100);
     }
   }
+  ctx.restore();
+}
+
+/* aide : bulle d'action (clavier) ou flèche vers l'objectif */
+function drawGuide(){
+  if(state!=='play' || !dave) return;
+  const c = actionContext();
+  const t = performance.now();
+  if(c && !isTouch){
+    const label = 'ESPACE : ' + c.txt.toLowerCase();
+    ctx.font = 'bold 13px Georgia';
+    const w = ctx.measureText(label).width + 18;
+    const bx = Math.max(w/2+4, Math.min(W-w/2-4, dave.x)), by = dave.y - 44;
+    ctx.fillStyle = 'rgba(42,32,21,.85)';
+    ctx.beginPath();
+    if(ctx.roundRect) ctx.roundRect(bx-w/2, by-12, w, 22, 8); else ctx.rect(bx-w/2, by-12, w, 22);
+    ctx.fill();
+    ctx.strokeStyle = '#c9a227'; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.fillStyle = '#ffd24a'; ctx.textAlign = 'center';
+    ctx.fillText(label, bx, by+4);
+    return;
+  }
+  if(c) return;
+  /* flèche : ↑ vers le marché avec du sucre, ↓ vers la base sinon */
+  const up = dave.carrying;
+  const bob = Math.sin(t/180)*3;
+  const ax = dave.x + 22, ay = dave.y - 22 + (up ? -bob : bob);
+  ctx.save();
+  ctx.globalAlpha = .8;
+  ctx.fillStyle = up ? '#ffffff' : '#ffd24a';
+  ctx.strokeStyle = 'rgba(42,32,21,.8)'; ctx.lineWidth = 2;
+  ctx.beginPath();
+  if(up){ ctx.moveTo(ax, ay-7); ctx.lineTo(ax+6, ay+2); ctx.lineTo(ax-6, ay+2); }
+  else  { ctx.moveTo(ax, ay+7); ctx.lineTo(ax+6, ay-2); ctx.lineTo(ax-6, ay-2); }
+  ctx.closePath(); ctx.stroke(); ctx.fill();
+  ctx.restore();
 }
 
 function drawMarket(){
@@ -1324,9 +1487,9 @@ function drawHUD(){
   }
   // code découvert
   if(codeShown){
-    ctx.fillStyle='rgba(42,32,21,.7)'; ctx.fillRect(2, H-24, 120, 20);
+    ctx.fillStyle='rgba(42,32,21,.7)'; ctx.fillRect(4, 24, 118, 20);
     ctx.fillStyle='#ffd24a'; ctx.font='bold 12px Georgia'; ctx.textAlign='left';
-    ctx.fillText('Code : '+secret, 8, H-9);
+    ctx.fillText('Code : '+secret, 10, 39);
   }
 }
 
