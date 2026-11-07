@@ -294,6 +294,9 @@ const snd = {
   shake(){ beep(240,.06,'triangle',.12); beep(300,.06,'triangle',.1,.06); },
   success(){ [523,659,784,1047,1319].forEach((f,i)=>beep(f,.16,'triangle',.14,i*.09)); },
   whistle(){ beep(520,.45,'triangle',.12); beep(520,.45,'triangle',.1,.5); beep(390,.7,'triangle',.12,1.0); },
+  goldBell(){ [1319,1568,1976,1568,1976,2349].forEach((f,i)=>beep(f,.12,'sine',.11,i*.09)); },
+  gold(){ [784,988,1175,1568,1976,2349,3136].forEach((f,i)=>beep(f,.14,'triangle',.13,i*.06)); },
+  spot(){ beep(1800,.09,'square',.08); beep(2200,.14,'square',.08,.1); },
   bad(){ beep(200,.25,'square',.12); beep(150,.3,'square',.1,.1); },
   pick(){ beep(600,.07,'sine',.1); },
   sad(){ [392,330,262,196].forEach((f,i)=>beep(f,.3,'triangle',.13,i*.28)); }
@@ -438,7 +441,8 @@ const THEMES = [
   guard:{coat:'#a93226', hat:'#6e4a22', skin:'#e8c39e', type:'mountie'},
   decor:'sapin'}
 ];
-let transT = 0, transFrom = null, transSwapped = false;
+let transT = 0, transFrom = null, transSwapped = false, transMsg = 'En route, Dave !';
+let goldenTimer = 15;
 function themeIndex(){ return (level-1) % THEMES.length; }
 function theme(){
   return THEMES[(state==='trans' && !transSwapped && transFrom!==null) ? transFrom : themeIndex()];
@@ -464,6 +468,7 @@ function newGame(){
     lane: ln,
     timer: 1.5 + Math.random()*4,
     warn: 0,
+    golden: false,
     train: null
   }));
   can = {active:false, x:0, y:0, life:0, timer: 8 + Math.random()*8};
@@ -471,6 +476,8 @@ function newGame(){
   secret = String(1000 + Math.floor(Math.random()*9000));
   vanOpen = false; treeShakes = 0; treeShakeT = 0; codeShown = false;
   bankFlash = 0;
+  goldenTimer = 12 + Math.random()*8;
+  transMsg = 'En route, Dave !';
 }
 
 function soldierCount(){ return Math.min(8, 1 + Math.floor((level-1)/2)); }
@@ -482,7 +489,8 @@ function syncSoldiers(){
       lane: ln,
       x: Math.random()*W,
       dir: Math.random()<.5?-1:1,
-      speed: 0
+      speed: 0,
+      mode: 'patrol', t: 0, cd: 0
     });
   }
   soldiers.forEach(s=> s.speed = Math.min(120, 42 + level*6));
@@ -606,27 +614,21 @@ function update(dt){
       banked += pocket;
       floats.push({x:dave.x, y:dave.y-24, t:2, txt:pocket+' $ à l’abri !'});
       pocket = 0;
-      transFrom = themeIndex();   // pays actuel, avant le changement
-      level++;
-      syncSoldiers();
-      bankFlash = 1;
       snd.bank();
-      /* départ vers un nouveau pays ! */
-      transT = 2.4; transSwapped = false;
-      state = 'trans';
-      snd.whistle();
-      if(banked > save.bestBank){ save.bestBank = banked; writeSave(); }
-      if(level > save.bestLevel){ save.bestLevel = level; writeSave(); }
+      nextWorld('En route, Dave !');
+      return;
     }
     if(!dave.carrying){ dave.carrying = true; snd.pick(); }
   }
 
   /* trains */
+  goldenTimer -= dt;
   for(const t of lanesData){
     if(t.train){
       t.train.x += t.train.speed * t.train.dir * dt;
       const len = t.train.len;
       if((t.train.dir>0 && t.train.x > W+60) || (t.train.dir<0 && t.train.x < -len-60)){
+        if(t.train.golden) goldenTimer = 18 + Math.random()*12;
         t.train = null;
         t.timer = Math.max(2.0, 5.5 - level*0.22) + Math.random()*2.5;
       }
@@ -634,23 +636,64 @@ function update(dt){
       t.warn -= dt;
       if(t.warn<=0){
         const dir = Math.random()<.5?1:-1;
-        const len = 160 + Math.floor(Math.random()*3)*70;
-        t.train = {
-          dir, len,
-          x: dir>0 ? -len-40 : W+40,
-          speed: Math.min(330, 110 + level*14 + Math.random()*40)
-        };
+        if(t.golden){
+          /* train lent : locomotive + wagon(s) + wagon doré à la queue */
+          const len = level < 4 ? 140 : 210;
+          t.train = { dir, len, golden:true,
+            x: dir>0 ? -len-40 : W+40,
+            speed: Math.min(115, 72 + level*4) };
+          t.golden = false;
+        } else {
+          const len = 160 + Math.floor(Math.random()*3)*70;
+          t.train = {
+            dir, len,
+            x: dir>0 ? -len-40 : W+40,
+            speed: Math.min(330, 110 + level*14 + Math.random()*40)
+          };
+        }
       }
     } else {
       t.timer -= dt;
-      if(t.timer<=0){ t.warn = 1.4; snd.bell(); }
+      if(t.timer<=0){
+        const goldOnTrack = lanesData.some(o => o.golden || (o.train && o.train.golden));
+        if(goldenTimer<=0 && !goldOnTrack){
+          t.golden = true; t.warn = 1.8; snd.goldBell();
+        } else {
+          t.warn = 1.4; snd.bell();
+        }
+      }
     }
   }
 
-  /* soldiers */
+  /* soldiers : patrouille, repèrent Dave devant eux, sprint, puis essoufflés */
+  const canSpot = level >= 2 && dave.power <= 0;
+  const sight = 100 + Math.min(100, (level-2)*12) + (pocket>0 ? 60 : 0);
+  const runMul = 2.0 + Math.min(0.6, level*0.05);
   for(const s of soldiers){
-    s.x += s.dir * s.speed * dt;
-    if(s.x<20){s.x=20;s.dir=1;} if(s.x>W-20){s.x=W-20;s.dir=-1;}
+    const ly = laneY(s.lane) + LANE_H/2;
+    if(s.cd > 0) s.cd -= dt;
+    if(s.mode === 'alert'){
+      s.t -= dt;
+      if(s.t <= 0){ s.mode = 'run'; s.t = 1.6; }
+    } else if(s.mode === 'run'){
+      s.x += s.dir * s.speed * runMul * dt;
+      s.t -= dt;
+      if(s.t <= 0){ s.mode = 'tired'; s.t = 1.2; }
+    } else if(s.mode === 'tired'){
+      s.x += s.dir * s.speed * 0.35 * dt;
+      s.t -= dt;
+      if(s.t <= 0){ s.mode = 'patrol'; s.cd = 2.5; }
+    } else {
+      s.x += s.dir * s.speed * dt;
+      if(canSpot && s.cd <= 0 && Math.abs(dave.y - ly) < LANE_H/2 + 4){
+        const dx = dave.x - s.x;
+        if(Math.abs(dx) < sight && Math.sign(dx) === s.dir){
+          s.mode = 'alert'; s.t = 0.45; snd.spot();
+        }
+      }
+    }
+    if(s.x<20){ s.x=20; s.dir=1; if(s.mode==='run'){ s.mode='tired'; s.t=1.2; } }
+    if(s.x>W-20){ s.x=W-20; s.dir=-1; if(s.mode==='run'){ s.mode='tired'; s.t=1.2; } }
   }
 
   /* energy can */
@@ -670,6 +713,17 @@ function update(dt){
       can.x = 40 + Math.random()*(W-80);
       can.y = laneY(ln) + LANE_H/2;
       can.life = 9; can.active = true;
+    }
+  }
+
+  /* wagon doré : toujours attrapable, même invincible */
+  for(const t of lanesData){
+    const tr = t.train;
+    if(!tr || !tr.golden) continue;
+    const ty = laneY(t.lane);
+    if(dave.y+14 > ty+4 && dave.y-14 < ty+LANE_H-4){
+      const gx = goldCarX(tr);
+      if(dave.x+14 > gx && dave.x-14 < gx+70){ catchGolden(t); return; }
     }
   }
 
@@ -702,17 +756,59 @@ function update(dt){
   floats = floats.filter(f=>f.t>0);
 }
 
+/* passage au pays suivant (après un voyage réussi ou le wagon doré) */
+function nextWorld(msg){
+  transFrom = themeIndex();   // pays actuel, avant le changement
+  level++;
+  syncSoldiers();
+  bankFlash = 1;
+  transMsg = msg;
+  transT = 2.4; transSwapped = false;
+  state = 'trans';
+  snd.whistle();
+  if(banked > save.bestBank){ save.bestBank = banked; writeSave(); }
+  if(level > save.bestLevel){ save.bestLevel = level; writeSave(); }
+}
+
+/* position x du wagon doré = dernier wagon, à la queue du train */
+function goldCarX(tr){
+  const x0 = tr.dir>0 ? tr.x : tr.x - tr.len;
+  return tr.dir>0 ? x0 : x0 + tr.len - 70;
+}
+
+function catchGolden(t){
+  const bonus = 20 + level*5;
+  const total = pocket + bonus;
+  banked += total;
+  pocket = 0;
+  t.train = null; t.timer = 3 + Math.random()*2;
+  goldenTimer = 22 + Math.random()*12;
+  floats.push({x:dave.x, y:dave.y-28, t:2.2, big:true, txt:'+'+total+' $ WAGON DORÉ !'});
+  const cols = ['#ffd24a','#f1c40f','#fff3b0','#e8b923'];
+  for(let i=0;i<50;i++) particles.push({
+    x:dave.x, y:dave.y,
+    vx:(Math.random()-.5)*360, vy:-80-Math.random()*260,
+    t:1+Math.random(), r:Math.random()*6, vr:(Math.random()-.5)*12,
+    c:cols[i%cols.length], s:4+Math.random()*4
+  });
+  snd.gold();
+  nextWorld('Wagon doré : raccourci !');
+}
+
 function updateTrans(dt){
   transT -= dt;
   const p = 1 - transT/2.4;
   if(p >= 0.5 && !transSwapped){
     transSwapped = true;
     /* nouveau pays : voies libres, gardes replacés, Dave à la base */
-    for(const t of lanesData){ t.train = null; t.warn = 0; t.timer = 2 + Math.random()*3; }
-    for(const s of soldiers){ s.x = Math.random()*W; }
+    for(const t of lanesData){ t.train = null; t.warn = 0; t.golden = false; t.timer = 2 + Math.random()*3; }
+    for(const s of soldiers){ s.x = Math.random()*W; s.mode = 'patrol'; s.cd = 1.5; }
+    dave.carrying = true;
     dave.x = W/2; dave.y = BASE_TOP+80;
   }
   if(transT <= 0){ state = 'play'; dave.invuln = Math.max(dave.invuln, 1); }
+  for(const p of particles){ p.x+=p.vx*dt; p.y+=p.vy*dt; p.vy+=300*dt; p.t-=dt; p.r+=p.vr*dt; }
+  particles = particles.filter(p=>p.t>0);
   for(const f of floats){ f.y -= 22*dt; f.t -= dt; }
   floats = floats.filter(f => f.t > 0);
 }
@@ -787,11 +883,15 @@ function draw(dt){
   for(const t of lanesData){
     const y = laneY(t.lane);
     if(t.warn>0 && Math.floor(t.warn*8)%2===0){
-      ctx.fillStyle = '#c0392b';
+      ctx.fillStyle = t.golden ? '#f1c40f' : '#c0392b';
+      if(t.golden){ ctx.save(); ctx.shadowColor='#ffd24a'; ctx.shadowBlur=14; }
       ctx.beginPath(); ctx.arc(14, y+LANE_H/2, 9, 0, 7); ctx.fill();
       ctx.beginPath(); ctx.arc(W-14, y+LANE_H/2, 9, 0, 7); ctx.fill();
-      ctx.fillStyle = '#fff'; ctx.font='bold 13px Georgia'; ctx.textAlign='center';
-      ctx.fillText('!', 14, y+LANE_H/2+5); ctx.fillText('!', W-14, y+LANE_H/2+5);
+      if(t.golden) ctx.restore();
+      ctx.fillStyle = t.golden ? '#7d6608' : '#fff';
+      ctx.font='bold 13px Georgia'; ctx.textAlign='center';
+      const ic = t.golden ? '$' : '!';
+      ctx.fillText(ic, 14, y+LANE_H/2+5); ctx.fillText(ic, W-14, y+LANE_H/2+5);
     }
     if(t.train) drawTrain(t.train, y);
   }
@@ -843,7 +943,7 @@ function draw(dt){
       ctx.fillStyle='#ffd24a'; ctx.font='bold 36px Georgia';
       ctx.fillText(th.name, W/2, H/2+6);
       ctx.fillStyle='#e8d9b5'; ctx.font='16px Georgia';
-      ctx.fillText('En route, Dave !', W/2, H/2+44);
+      ctx.fillText(transMsg, W/2, H/2+44);
       ctx.save(); ctx.translate(W/2 - 18, H/2 + 86);
       drawDecorItem(th.decor, 0, 0);
       ctx.restore();
@@ -1030,13 +1130,57 @@ function drawTrain(tr, y){
   // phare
   ctx.fillStyle = tt.accent;
   ctx.fillRect(tr.dir>0 ? hx+62 : hx+2, cy-8, 5, 10);
+  if(tr.golden) drawGoldCar(tr, cy);
+}
+
+function drawGoldCar(tr, cy){
+  const gx = goldCarX(tr);
+  const now = performance.now();
+  ctx.save();
+  ctx.shadowColor = '#ffd24a'; ctx.shadowBlur = 16 + Math.sin(now/120)*6;
+  const grad = ctx.createLinearGradient(0, cy-20, 0, cy+20);
+  grad.addColorStop(0, '#fff3b0'); grad.addColorStop(.45, '#f1c40f'); grad.addColorStop(1, '#b7950b');
+  ctx.fillStyle = grad;
+  ctx.fillRect(gx+3, cy-20, 64, 38);
+  ctx.restore();
+  ctx.strokeStyle = '#7d6608'; ctx.lineWidth = 2; ctx.strokeRect(gx+3, cy-20, 64, 38);
+  ctx.fillStyle = '#7d6608'; ctx.font = 'bold 18px Georgia'; ctx.textAlign = 'center';
+  ctx.fillText('$', gx+35, cy+6);
+  ctx.fillStyle = '#2a2015';
+  ctx.beginPath(); ctx.arc(gx+18, cy+18, 6,0,7); ctx.fill();
+  ctx.beginPath(); ctx.arc(gx+52, cy+18, 6,0,7); ctx.fill();
+  /* scintillements */
+  ctx.fillStyle = '#fff';
+  for(let i=0;i<4;i++){
+    const ph = now/260 + i*1.7;
+    const a = (Math.sin(ph)+1)/2;
+    if(a < .35) continue;
+    const sx = gx + 10 + ((i*23 + Math.floor(ph/6.28)*17) % 52);
+    const sy = cy - 26 + ((i*11) % 40);
+    const r = 2 + a*3;
+    ctx.globalAlpha = a;
+    ctx.beginPath();
+    ctx.moveTo(sx, sy-r); ctx.lineTo(sx+r*.35, sy); ctx.lineTo(sx, sy+r); ctx.lineTo(sx-r*.35, sy); ctx.closePath();
+    ctx.moveTo(sx-r, sy); ctx.lineTo(sx, sy+r*.35); ctx.lineTo(sx+r, sy); ctx.lineTo(sx, sy-r*.35); ctx.closePath();
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
 }
 
 function drawSoldier(s){
   const g = theme().guard;
   const y = laneY(s.lane)+LANE_H/2;
-  const step = Math.sin(performance.now()/120 + s.x)*3;
+  const run = s.mode === 'run';
+  const step = s.mode==='alert' ? 0 : Math.sin(performance.now()/(run ? 45 : s.mode==='tired' ? 260 : 120) + s.x)*(run ? 5 : 3);
+  /* poussière quand il court */
+  if(run){
+    ctx.fillStyle = 'rgba(120,100,70,.35)';
+    for(let i=1;i<=3;i++){
+      ctx.beginPath(); ctx.arc(s.x - s.dir*(8+i*7), y+14 - (i%2)*3, 3+i, 0, 7); ctx.fill();
+    }
+  }
   ctx.save(); ctx.translate(s.x, y);
+  if(run) ctx.rotate(s.dir*0.18);
   // jambes
   ctx.strokeStyle = g.hat; ctx.lineWidth=4;
   ctx.beginPath(); ctx.moveTo(-3,6); ctx.lineTo(-4-step*.5,16); ctx.stroke();
@@ -1065,6 +1209,24 @@ function drawSoldier(s){
   ctx.strokeStyle='#5a4030'; ctx.lineWidth=3;
   ctx.beginPath(); ctx.moveTo(s.dir*6,-4); ctx.lineTo(s.dir*10,-24); ctx.stroke();
   ctx.restore();
+  /* bulle « ! » quand il repère Dave */
+  if(s.mode === 'alert' || s.mode === 'run'){
+    const by = y - 40 + (s.mode==='alert' ? Math.sin(performance.now()/40)*2 : 0);
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(s.x, by, 10, 0, 7); ctx.fill();
+    ctx.strokeStyle = '#c0392b'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = '#c0392b'; ctx.font = 'bold 15px Georgia'; ctx.textAlign = 'center';
+    ctx.fillText('!', s.x, by+5);
+  }
+  /* gouttes de sueur quand il est essoufflé */
+  if(s.mode === 'tired'){
+    ctx.fillStyle = '#7fb3d5';
+    const ph = performance.now()/200;
+    for(let i=0;i<2;i++){
+      const dy = ((ph + i*.5) % 1) * 10;
+      ctx.beginPath(); ctx.arc(s.x + (i? 9 : -9), y - 26 + dy, 2.5, 0, 7); ctx.fill();
+    }
+  }
 }
 
 function drawCan(){
@@ -1287,7 +1449,13 @@ window.FS = {
   get level(){return level;}, get lives(){return lives;}, get secret(){return secret;},
   get dave(){return dave;}, get vanOpen(){return vanOpen;},
   get region(){return THEMES[themeIndex()].name;},
+  get soldiers(){return soldiers;},
+  get lanes(){return lanesData;},
   _debug: {
+    goldTrain(i, x, dir){ const t=lanesData[i]; t.warn=0; t.train={dir:dir||1, len:140, golden:true, x:x, speed:0}; },
+    plainTrain(i, x){ const t=lanesData[i]; t.warn=0; t.train={dir:1, len:140, x:x, speed:0}; },
+    setGoldenTimer(v){ goldenTimer=v; },
+    setPocket(v){ pocket=v; },
     setLevel(n){ level=n; syncSoldiers(); },
     endTrans(){ if(state==='trans'){ transT=0.01; } },
     setDave(x,y){ dave.x=x; dave.y=y; },
