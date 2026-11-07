@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>FOUR SUCRE</title>
 <style>
   :root{
@@ -15,6 +15,8 @@
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;
     user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;}
   button,.btn{touch-action:manipulation;}
+  html{-webkit-text-size-adjust:100%;text-size-adjust:100%;}
+  :root{--ctrl:150px;}
   html,body{
     width:100%;height:100%;
     overflow:hidden;
@@ -27,7 +29,9 @@
   #wrap{
     width:100%;height:100%;
     display:flex;align-items:center;justify-content:center;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   }
+  #wrap.top{align-items:flex-start;}
   #stage{
     position:relative;
   }
@@ -41,15 +45,18 @@
   }
   /* ---------- overlays ---------- */
   .overlay{
-    position:absolute;inset:0;
-    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    position:fixed;inset:0;
+    display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+    overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;
+    overscroll-behavior:contain;
     background:rgba(42,32,21,.88);
     color:var(--sepia-paper);
     text-align:center;
-    padding:16px;
-    border-radius:6px;
+    padding:max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
     z-index:20;
   }
+  .overlay > :first-child{margin-top:auto;}
+  .overlay > :last-child{margin-bottom:auto;}
   .hidden{display:none !important;}
   h1{
     font-size:min(13vw,56px);
@@ -155,18 +162,20 @@
   .kpGrid #kpOk{color:#fff;text-shadow:0 1px 0 rgba(0,0,0,.4);background:linear-gradient(180deg,#86d08a,#3e8a4e);border-color:#2b5f36;box-shadow:inset 0 -3px 0 rgba(0,0,0,.2), 0 4px 0 #2b5f36;}
   .kpGrid #kpClear{color:#fff;text-shadow:0 1px 0 rgba(0,0,0,.4);background:linear-gradient(180deg,#f0a08a,#c0392b);border-color:#7d2318;box-shadow:inset 0 -3px 0 rgba(0,0,0,.2), 0 4px 0 #7d2318;}
   /* ---------- contrôles tactiles ---------- */
-  #touchUI{position:absolute;inset:0;z-index:10;pointer-events:none;display:none;}
+  #touchUI{position:fixed;inset:0;z-index:10;pointer-events:none;display:none;}
   body.touch #touchUI{display:block;}
   #dpad{
-    position:absolute;left:10px;bottom:12px;
-    width:150px;height:150px;border-radius:50%;
+    position:absolute;
+    left:calc(12px + env(safe-area-inset-left));
+    bottom:calc(10px + env(safe-area-inset-bottom));
+    width:var(--ctrl);height:var(--ctrl);border-radius:50%;
     pointer-events:auto;touch-action:none;
     background:radial-gradient(circle at 50% 38%, rgba(120,88,55,.62), rgba(45,32,18,.72) 72%);
     border:3px solid rgba(201,162,39,.85);
     box-shadow:inset 0 0 0 7px rgba(232,217,181,.12), inset 0 4px 10px rgba(0,0,0,.35), 0 5px 14px rgba(0,0,0,.4);
   }
   #dpad .arr{
-    position:absolute;font-size:19px;line-height:1;
+    position:absolute;font-size:calc(var(--ctrl)*.13);line-height:1;
     color:rgba(232,217,181,.8);
     transition:color .08s, text-shadow .08s;
     pointer-events:none;
@@ -178,7 +187,8 @@
   #dpad .r{top:50%;right:11px;transform:translateY(-50%);}
   #dpKnob{
     position:absolute;left:50%;top:50%;
-    width:58px;height:58px;margin:-29px 0 0 -29px;border-radius:50%;
+    width:calc(var(--ctrl)*.39);height:calc(var(--ctrl)*.39);
+    margin:calc(var(--ctrl)*-.195) 0 0 calc(var(--ctrl)*-.195);border-radius:50%;
     background:radial-gradient(circle at 35% 30%, #fff3b0, #e0b23a 45%, #9a7410 100%);
     border:2px solid #6e5208;
     box-shadow:0 5px 9px rgba(0,0,0,.45), inset 0 -3px 0 rgba(0,0,0,.2), inset 0 2px 0 rgba(255,255,255,.5);
@@ -186,11 +196,13 @@
     transition:transform .06s;
   }
   #bAct{
-    position:absolute;right:14px;bottom:30px;
-    width:98px;height:98px;border-radius:50%;
+    position:absolute;
+    right:calc(14px + env(safe-area-inset-right));
+    bottom:calc(var(--ctrl)*.2 + 6px + env(safe-area-inset-bottom));
+    width:calc(var(--ctrl)*.66);height:calc(var(--ctrl)*.66);border-radius:50%;
     pointer-events:auto;touch-action:none;
     display:flex;flex-direction:column;align-items:center;justify-content:center;
-    color:#fff8e6;font-weight:bold;font-size:13px;letter-spacing:1px;
+    color:#fff8e6;font-weight:bold;font-size:calc(var(--ctrl)*.085);letter-spacing:1px;
     text-shadow:0 2px 0 rgba(60,20,0,.6);
     background:radial-gradient(circle at 40% 30%, #f29a62, #c0531d 55%, #8a3510 100%);
     border:4px solid #c9a227;
@@ -198,7 +210,7 @@
                inset 0 3px 0 rgba(255,220,180,.45);
     transition:transform .05s;
   }
-  #bAct .ic{font-size:30px;line-height:1;margin-bottom:3px;min-height:30px;}
+  #bAct .ic{font-size:calc(var(--ctrl)*.2);line-height:1;margin-bottom:3px;min-height:calc(var(--ctrl)*.2);}
   #bAct.pressed{transform:translateY(5px);}
   #bAct.ready{animation:actGlow 1s ease-in-out infinite;}
   @keyframes actGlow{
@@ -216,6 +228,36 @@
     display:flex;align-items:center;justify-content:center;
   }
   #muteBtn:active{transform:translateY(2px);box-shadow:0 1px 0 #3e2f1c;}
+  #rotHint{
+    display:none;position:fixed;z-index:11;
+    top:calc(10px + env(safe-area-inset-top));left:calc(12px + env(safe-area-inset-left));
+    max-width:150px;padding:8px 10px;border-radius:10px;
+    background:rgba(62,47,28,.85);border:2px solid #c9a227;
+    color:#e8d9b5;font-size:13px;line-height:1.3;text-align:center;pointer-events:none;
+  }
+  @media (orientation:landscape){ body.touch #rotHint{display:block;} }
+  @media (max-height:520px){
+    h1{font-size:40px;letter-spacing:3px;margin-bottom:2px;}
+    #daveHero{display:none;}
+    .sub{font-size:14px;margin:6px 0 10px;max-width:520px;}
+    .btn{font-size:18px;padding:10px 30px;}
+    .btn.big{font-size:22px;padding:11px 44px;}
+    .btn.small{font-size:14px;padding:6px 12px;}
+    .woodCard{padding:10px;}
+    #shop h2,#keypad h2{font-size:19px;margin-bottom:4px !important;}
+    #shop .card{width:min(96%,520px);}
+    .shopRow{margin:5px 0;padding:6px 10px;}
+    .shopRow .ds{font-size:11px;}
+    #kpDisplay{font-size:24px;min-height:40px;margin-bottom:8px;}
+    .kpGrid{grid-template-columns:repeat(3,58px);gap:6px;}
+    .kpGrid button{height:40px;font-size:20px;}
+  }
+  @media (max-height:520px) and (orientation:landscape){
+    #shop .card{width:min(96%,720px);display:grid;grid-template-columns:repeat(3,1fr);column-gap:8px;}
+    #shop .card > :not(.shopRow){grid-column:1/-1;}
+    #shop .card > #closeShop{justify-self:center;}
+    #shop .shopRow{flex-direction:column;align-items:stretch;text-align:center;gap:6px;}
+  }
 </style>
 </head>
 <body>
@@ -224,6 +266,7 @@
     <canvas id="cv" width="480" height="800"></canvas>
     <button id="muteBtn" aria-label="Son">&#128266;</button>
 
+    <div id="rotHint">&#128241; Tourne ton t&eacute;l&eacute;phone pour jouer en grand !</div>
     <div id="touchUI">
       <div id="dpad">
         <span class="arr u">&#9650;</span><span class="arr d">&#9660;</span>
@@ -981,6 +1024,8 @@ function vanBonus(){
 
 /* ================= DRAW ================= */
 function draw(dt){
+  const k = cv.width / W;
+  ctx.setTransform(k,0,0,k,0,0);
   ctx.clearRect(0,0,W,H);
   ctx.save();
   if(shakeT > 0){
@@ -1495,7 +1540,10 @@ function drawHUD(){
 
 /* ---------- hero (start screen) ---------- */
 (function(){
-  const hc = document.getElementById('daveHero').getContext('2d');
+  const hEl = document.getElementById('daveHero');
+  hEl.width = 280; hEl.height = 240; hEl.style.width = '140px'; hEl.style.height = '120px';
+  const hc = hEl.getContext('2d');
+  hc.scale(2,2);
   hc.clearRect(0,0,140,120);
   drawDaveSprite(hc, 62, 70, 3, 1, true, 1.2);
 })();
@@ -1579,22 +1627,71 @@ document.querySelectorAll('.kpGrid button').forEach(b=>{
   });
 });
 
-/* ---------- resize ---------- */
-function resize(){
-  const vv = window.visualViewport;
-  const vw = vv ? vv.width : window.innerWidth;
-  const vh = vv ? vv.height : window.innerHeight;
-  const s = Math.min(vw/W, vh/H);
-  cv.style.width = (W*s)+'px';
-  cv.style.height = (H*s)+'px';
+/* ---------- mise en page (téléphone, tablette, ordinateur) ---------- */
+const wrapEl = document.getElementById('wrap');
+const vpMeta = document.querySelector('meta[name="viewport"]');
+let lastLayout = '';
+function safeInsets(){
+  const cs = getComputedStyle(wrapEl);
+  return {
+    t: parseFloat(cs.paddingTop)||0, r: parseFloat(cs.paddingRight)||0,
+    b: parseFloat(cs.paddingBottom)||0, l: parseFloat(cs.paddingLeft)||0
+  };
 }
+function layout(force){
+  const vv = window.visualViewport;
+  /* si la page a été zoomée par un pincement, on la remet à 100 % */
+  if(vv && vv.scale > 1.02 && vpMeta){
+    const c = vpMeta.getAttribute('content');
+    vpMeta.setAttribute('content', c.replace('maximum-scale=1.0', 'maximum-scale=1.01'));
+    setTimeout(()=>vpMeta.setAttribute('content', c), 60);
+  }
+  let vw = document.documentElement.clientWidth || window.innerWidth;
+  let vh = window.innerHeight;
+  if(vv && Math.abs(vv.scale - 1) < 0.02){ vw = vv.width; vh = vv.height; }
+  const ins = safeInsets();
+  const aw = vw - ins.l - ins.r, ah = vh - ins.t - ins.b;
+  const land = vw > vh;
+  const ctrl = Math.round(Math.max(104, Math.min(160, Math.min(vw, vh) * 0.34)));
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const key = [vw, vh, dpr, ins.t, ins.b, ins.l, ins.r].join('x');
+  if(key === lastLayout && !force) return;
+  lastLayout = key;
+
+  let s = Math.min(aw / W, ah / H);
+  let top = false;
+  if(isTouch && !land){
+    /* portrait : le jeu en haut, la manette dans l'espace libre en dessous */
+    top = true;
+    const need = ctrl + 16;
+    const free = ah - H * s;
+    if(free < need) s = Math.max((ah - need) / H, s * 0.85);
+  } else if(isTouch && land){
+    /* paysage : la manette et le bouton dans les bandes sur les côtés */
+    const bar = (aw - W * s) / 2;
+    if(bar < ctrl + 20) s = Math.max(Math.min(s, (aw - 2 * (ctrl + 20)) / W), s * 0.75);
+  }
+  wrapEl.classList.toggle('top', top);
+  document.documentElement.style.setProperty('--ctrl', ctrl + 'px');
+  const cssW = Math.floor(W * s), cssH = Math.floor(H * s);
+  cv.style.width = cssW + 'px';
+  cv.style.height = cssH + 'px';
+  const bw = Math.round(cssW * dpr), bh = Math.round(cssH * dpr);
+  if(cv.width !== bw || cv.height !== bh){ cv.width = bw; cv.height = bh; }
+}
+function resize(){ layout(false); }
 window.addEventListener('resize', resize);
-window.addEventListener('orientationchange', ()=>setTimeout(resize,250));
+window.addEventListener('orientationchange', ()=>{ setTimeout(resize, 150); setTimeout(resize, 500); });
 if(window.visualViewport) visualViewport.addEventListener('resize', resize);
-resize();
+/* iOS oublie parfois l'événement resize (rotation, barre d'adresse) */
+setInterval(resize, 700);
+layout(true);
 
 /* empêcher le scroll tactile sur la page */
-document.addEventListener('touchmove', e=>{ e.preventDefault(); }, {passive:false});
+document.addEventListener('touchmove', e=>{
+  if(e.target.closest && e.target.closest('.overlay') && !e.target.closest('.kpGrid')) return;
+  e.preventDefault();
+}, {passive:false});
 /* empêcher le zoom sur iPhone/Android : pincement, double-tap, menu long-press */
 document.addEventListener('gesturestart', e=>{ e.preventDefault(); });
 document.addEventListener('dblclick', e=>{ e.preventDefault(); });
